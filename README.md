@@ -33,6 +33,21 @@ npm start
 
 Then open `http://localhost:8080`.
 
+## Deploy (Fastest: Render)
+
+This repo now includes `render.yaml` so you can deploy quickly with a persistent disk for SQLite.
+
+1. Push this repository to GitHub.
+2. In Render, choose New + and select Blueprint.
+3. Connect this GitHub repo and deploy.
+4. Render reads `render.yaml` and creates:
+	- a Node web service
+	- a persistent disk mounted at `/var/data`
+	- `DATA_DIR=/var/data` so `insight_reports.db` persists
+5. Open your Render URL after deploy completes.
+
+If you need it live by 6:30 PM, start the Blueprint deploy now. Typical first deploy time is a few minutes.
+
 ## API Endpoints
 
 - `GET /api/health` - backend status

@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: insight-reports-co
+    runtime: node
+    plan: free
+    autoDeploy: true
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: DATA_DIR
+        value: /var/data
+    disk:
+      name: insight-reports-data
+      mountPath: /var/data
+      sizeGB: 1

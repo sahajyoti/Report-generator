@@ -1,178 +1,633 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FieldPro Reports</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="styles.css" />
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
-      defer
-    ></script>
-    <script src="app.js" defer></script>
-  </head>
-  <body>
-    <div class="bg-shape bg-shape-1"></div>
-    <div class="bg-shape bg-shape-2"></div>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Insight Reports Co. – Service & Billing</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="styles.css?v=20260406f" />
+<link rel="stylesheet" href="ui-fix.css?v=20260406g" />
+<script src="app.js?v=20260406f" defer></script>
+</head>
+<body>
 
-    <header class="app-header">
-      <div>
-        <p class="eyebrow">Technician Toolkit</p>
-        <h1>FieldPro Reports</h1>
+<header class="header">
+  <div class="header-inner">
+    <div class="brand-block">
+      <div class="brand-mark">IR</div>
+      <div class="brand-text">
+        <div class="logo">Insight Reports Co.</div>
+        <p class="brand-tagline">Service reports, invoices, and follow-up in one place</p>
       </div>
-      <button id="newReportTopBtn" class="btn btn-primary">Create New Report</button>
-    </header>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="top-nav-btn" onclick="switchTab('report')">Home</button>
+      <button type="button" class="top-nav-btn" onclick="switchTab('bill')">About</button>
+      <button type="button" class="top-nav-btn" onclick="switchTab('contact')">Services</button>
+      <button type="button" class="top-nav-btn" onclick="switchTab('quotation')">Quotation</button>
+      <button type="button" class="top-nav-btn" onclick="switchTab('contact')">Testimonials</button>
+      <button type="button" class="top-nav-btn" onclick="switchTab('contact')">Gallery</button>
+      <div class="ai-pill">Smart Reports</div>
+      <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav()" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
 
-    <main class="app-main">
-      <section class="dashboard" id="dashboard">
-        <article class="card metric">
-          <p>Today Reports</p>
-          <h2 id="todayCount">0</h2>
-        </article>
-        <article class="card metric">
-          <p>Total Customers</p>
-          <h2 id="customerCount">0</h2>
-        </article>
-        <article class="card metric">
-          <p>Total Invoices</p>
-          <h2 id="invoiceCount">0</h2>
-        </article>
-      </section>
+<!-- NAVBAR -->
+<div class="page-tabs">
+  <div class="page-tab active" onclick="switchTab('report')" id="tab-report">
+    <span class="tab-icon">📋</span> Service Report
+  </div>
+  <div class="page-tab" onclick="switchTab('bill')" id="tab-bill">
+    <span class="tab-icon">💰</span> Billing
+  </div>
+  <div class="page-tab" onclick="switchTab('contact')" id="tab-contact">
+    <span class="tab-icon">📞</span> Contact
+  </div>
+  <div class="page-tab" onclick="switchTab('quotation')" id="tab-quotation">
+    <span class="tab-icon">🧾</span> Quotation
+  </div>
+</div>
 
-      <section class="card quick-actions">
-        <h3>Quick Actions</h3>
-        <div class="button-row">
-          <button id="newReportBtn" class="btn btn-primary">Create New Report</button>
-          <button id="historyBtn" class="btn btn-secondary">View History</button>
+<!-- ══════════════════════════════════════════
+     PAGE 1 — SERVICE REPORT
+═══════════════════════════════════════════ -->
+<div class="page-panel active" id="panel-report">
+<div class="container">
+
+  <section class="hero-split">
+    <div class="hero-copy">
+      <p class="hero-kicker">Professional Services</p>
+      <h1>Service reports that look like a premium portfolio site</h1>
+      <p>Create polished reports, invoices, and WhatsApp-ready summaries with a workflow that feels more like a modern agency website than a form app.</p>
+      <div class="hero-points">
+        <span>Client-ready PDFs</span>
+        <span>Recent services cards</span>
+        <span>Fast billing and follow-up</span>
+      </div>
+      <div class="hero-actions">
+        <button type="button" class="hero-btn primary" onclick="document.getElementById('r-tech').focus()">Create Report</button>
+        <button type="button" class="hero-btn ghost" onclick="switchTab('contact')">View Services</button>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="steps" id="rpt-steps">
+    <div class="step active" id="rs1"><div class="step-num">1</div><div>Details</div></div>
+    <div class="step" id="rs2"><div class="step-num">2</div><div>Service Info</div></div>
+    <div class="step" id="rs3"><div class="step-num">3</div><div>Report Preview</div></div>
+    <div class="step" id="rs4"><div class="step-num">4</div><div>Download</div></div>
+  </div>
+
+  <!-- FORM -->
+  <div id="rpt-form">
+
+    <div class="card">
+      <div class="card-title"><div class="ico">🔧</div>Technician & Company</div>
+      <div class="row">
+        <div class="field"><label>Your Name <span class="req">*</span></label><input id="r-tech" required placeholder="e.g. Ramesh Sharma"/></div>
+        <div class="field"><label>Company / Shop <span class="req">*</span></label><input id="r-company" required placeholder="e.g. Sharma AC Services"/></div>
+      </div>
+      <div class="row one">
+        <div class="field"><label>Company Address</label><input id="r-companyaddr" placeholder="e.g. Shop 14, Main Road, Delhi"/></div>
+      </div>
+      <div class="row one">
+        <div class="field">
+          <label>Company Logo</label>
+          <div class="logo-upload-row">
+            <input id="company-logo-input" type="file" accept="image/png,image/jpeg"/>
+            <button type="button" class="auto-gen-btn" onclick="clearLogo()">Remove Logo</button>
+          </div>
         </div>
-      </section>
+      </div>
+      <div class="row">
+        <div class="field"><label>Phone</label><input id="r-phone" type="tel" placeholder="9876543210"/></div>
+        <div class="field"><label>City</label><input id="r-city" placeholder="e.g. Delhi"/></div>
+      </div>
+    </div>
 
-      <section id="wizardSection" class="card hidden">
-        <div class="wizard-header">
-          <h3>Create Report</h3>
-          <p id="stepLabel">Step 1 of 5</p>
-        </div>
+    <div class="card">
+      <div class="card-title"><div class="ico">👤</div>Customer Details</div>
+      <div class="row">
+        <div class="field"><label>Name <span class="req">*</span></label><input id="r-cname" required placeholder="e.g. Suresh Gupta"/></div>
+        <div class="field"><label>Phone</label><input id="r-cphone" type="tel" placeholder="9876543210"/></div>
+      </div>
+      <div class="row one">
+        <div class="field"><label>Address</label><input id="r-caddr" placeholder="Flat 302, Sector 14, Gurgaon"/></div>
+      </div>
+    </div>
 
-        <div class="step" data-step="1">
-          <label>Choose Existing Customer</label>
-          <select id="customerSelect">
-            <option value="">Select customer</option>
+    <div class="card">
+      <div class="card-title"><div class="ico">📺</div>Device & Complaint</div>
+      <div class="row">
+        <div class="field"><label>Device Type <span class="req">*</span></label>
+          <select id="r-device" required>
+            <option value="">Select device...</option>
+            <option>Split AC</option><option>Window AC</option>
+            <option>Refrigerator</option><option>Washing Machine</option>
+            <option>Microwave</option><option>Geyser / Water Heater</option>
+            <option>Television</option><option>Ceiling Fan</option>
+            <option>Inverter / UPS</option><option>Water Purifier</option>
+            <option>Electrical Wiring</option><option>Plumbing</option><option>Other</option>
           </select>
-
-          <p class="muted">or add a new customer</p>
-
-          <label>Customer Name</label>
-          <input id="customerName" type="text" placeholder="Rahul Sharma" />
-
-          <label>Phone</label>
-          <input id="customerPhone" type="tel" placeholder="9876543210" />
-
-          <label>Address (optional)</label>
-          <textarea id="customerAddress" rows="2" placeholder="Area, City"></textarea>
         </div>
-
-        <div class="step hidden" data-step="2">
-          <label>Service Type</label>
-          <select id="serviceType">
-            <option>AC Repair</option>
-            <option>Electrical Work</option>
-            <option>Biomedical Device Service</option>
-            <option>Plumbing</option>
-            <option>General Maintenance</option>
+        <div class="field"><label>Brand / Model</label><input id="r-brand" placeholder="e.g. Daikin 1.5 Ton"/></div>
+      </div>
+      <div class="row one">
+        <div class="field"><label>Customer's Complaint <span class="req">*</span></label>
+          <textarea id="r-complaint" required placeholder="e.g. AC not cooling, making noise, water leaking..."></textarea></div>
+      </div>
+      <div class="row one">
+        <div class="field"><label>Work Done / Diagnosis <span class="req">*</span></label>
+          <textarea id="r-work" required placeholder="e.g. Checked gas pressure, refilled R-22, cleaned filters, replaced capacitor..."></textarea></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Service Date</label><input type="date" id="r-date"/></div>
+        <div class="field"><label>Job Status</label>
+          <select id="r-status">
+            <option>Completed</option>
+            <option>Partial – Follow-up Needed</option>
+            <option>Pending – Part Ordered</option>
+            <option>Under Warranty</option>
           </select>
-
-          <label>Problem Reported</label>
-          <textarea id="problem" rows="2" placeholder="No cooling / device not starting"></textarea>
-
-          <label>Work Done</label>
-          <textarea id="workDone" rows="2" placeholder="Replaced capacitor, cleaned filter"></textarea>
-
-          <label>Technician Name</label>
-          <input id="technicianName" type="text" placeholder="Your name" />
         </div>
-
-        <div class="step hidden" data-step="3">
-          <label>Parts Used</label>
-          <div id="partsList"></div>
-          <button id="addPartBtn" class="btn btn-ghost" type="button">+ Add Part</button>
-
-          <label>Service Charge</label>
-          <input id="serviceCharge" type="number" min="0" placeholder="500" />
-
-          <label>Additional Notes (optional)</label>
-          <textarea id="notes" rows="2" placeholder="Next service after 3 months"></textarea>
-        </div>
-
-        <div class="step hidden" data-step="4">
-          <div class="inline">
-            <label class="check-inline">
-              <input id="gstEnabled" type="checkbox" />
-              Include GST
-            </label>
-            <input id="gstPercent" type="number" value="18" min="0" max="28" />
-          </div>
-
-          <div class="totals card soft">
-            <div>
-              <span>Subtotal</span>
-              <strong id="subtotal">0</strong>
-            </div>
-            <div>
-              <span>GST</span>
-              <strong id="gstAmount">0</strong>
-            </div>
-            <div>
-              <span>Total</span>
-              <strong id="totalAmount">0</strong>
-            </div>
-          </div>
-
-          <p class="muted">Invoice number and date are auto-generated.</p>
-        </div>
-
-        <div class="step hidden" data-step="5">
-          <label>Client Signature</label>
-          <canvas id="signaturePad" width="500" height="180"></canvas>
-          <div class="button-row">
-            <button id="clearSignBtn" class="btn btn-ghost" type="button">Clear Signature</button>
-          </div>
-
-          <div class="button-row mt">
-            <button id="saveReportBtn" class="btn btn-primary" type="button">Save & Generate</button>
+      </div>
+      <div class="row">
+        <div class="field"><label>Report Number</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="text" id="r-rptnum" placeholder="SR-2024-001" style="flex:1;"/>
+            <button type="button" class="auto-gen-btn" onclick="autoGenReportNum()" title="Auto-generate">🔄</button>
           </div>
         </div>
-
-        <div class="wizard-nav">
-          <button id="prevBtn" class="btn btn-secondary" type="button">Back</button>
-          <button id="nextBtn" class="btn btn-primary" type="button">Next</button>
+        <div class="field"><label>Theme</label>
+          <select id="r-theme">
+            <option value="corporate">Corporate Blue</option>
+            <option value="warm">Warm Professional</option>
+            <option value="dark">Modern Dark</option>
+            <option value="teal">Elegant Teal</option>
+          </select>
         </div>
-      </section>
+      </div>
+    </div>
 
-      <section id="previewSection" class="card hidden">
-        <div class="preview-actions">
-          <h3>Report Preview</h3>
-          <div class="button-row">
-            <button id="downloadPdfBtn" class="btn btn-primary">Download PDF</button>
-            <button id="shareWaBtn" class="btn btn-secondary">Share via WhatsApp</button>
+    <div id="rpt-msg" class="msg"></div>
+
+    <button class="btn-primary" id="rpt-genbtn" onclick="generateReport()">
+      <div class="spinner" id="rpt-spin"></div>
+      <span id="rpt-btnlbl">✨ Generate AI Service Report</span>
+    </button>
+  </div><!-- /rpt-form -->
+
+  <!-- OUTPUT -->
+  <div id="rpt-out">
+    <div class="portfolio-output-head">
+      <span class="output-badge">Portfolio Output</span>
+      <h3>Generated Service Report</h3>
+      <p>This is how your final report is presented to clients.</p>
+    </div>
+
+    <div class="csr-template" id="rpt-preview">
+      <!-- HEADER -->
+      <div class="csr-header">
+        <img id="csr-logo" class="brand-logo report-logo" alt="Company logo" hidden/>
+        <h1 id="csr-title">SERVICE REPORT</h1>
+        <p id="csr-company">–</p>
+      </div>
+
+      <!-- TOP INFO ROW -->
+      <div class="csr-row">
+        <div class="csr-col wide"><label>Report No.</label><div class="csr-value" id="csr-rptnum">–</div></div>
+        <div class="csr-col"><label>Date</label><div class="csr-value" id="csr-date">–</div></div>
+      </div>
+      <div class="csr-row">
+        <div class="csr-col full"><label>Company Address</label><div class="csr-value" id="csr-companyaddr">–</div></div>
+      </div>
+
+      <!-- CUSTOMER DETAILS SECTION -->
+      <div class="csr-section-title">Customer Information</div>
+      <div class="csr-row">
+        <div class="csr-col wide"><label>Customer Name</label><div class="csr-value" id="csr-cname">–</div></div>
+        <div class="csr-col"><label>Phone</label><div class="csr-value" id="csr-cphone">–</div></div>
+      </div>
+      <div class="csr-row">
+        <div class="csr-col full"><label>Address</label><div class="csr-value" id="csr-caddr">–</div></div>
+      </div>
+
+      <!-- DEVICE SECTION -->
+      <div class="csr-section-title">Equipment Details</div>
+      <div class="csr-row">
+        <div class="csr-col"><label>Device Type</label><div class="csr-value" id="csr-device">–</div></div>
+        <div class="csr-col"><label>Brand / Model</label><div class="csr-value" id="csr-brand">–</div></div>
+        <div class="csr-col"><label>Status</label><div class="csr-value" id="csr-status">–</div></div>
+      </div>
+
+      <!-- PROBLEM SECTION -->
+      <div class="csr-section-title">Problem Analysis</div>
+      <div class="csr-row">
+        <div class="csr-col full"><label>Problem Reported</label><div class="csr-value multi" id="csr-complaint">–</div></div>
+      </div>
+
+      <!-- WORK PERFORMED -->
+      <div class="csr-section-title">Service Rendered</div>
+      <div class="csr-row">
+        <div class="csr-col full"><label>Work Performed</label><div class="csr-value multi" id="csr-work">–</div></div>
+      </div>
+
+      <!-- SIGNATURES -->
+      <div class="csr-signatures">
+        <div class="csr-sig left"><div class="sig-line"></div><span>Technician Signature</span></div>
+        <div class="csr-sig right"><div class="sig-line"></div><span>Customer Signature</span></div>
+      </div>
+
+      <!-- FOOTER -->
+      <div class="csr-footer">
+        Generated by <strong id="csr-tech">Insight Reports Co.</strong> • <span id="csr-techname">–</span>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-action btn-dark" onclick="downloadReportPDF()">📄 Download PDF</button>
+      <button class="btn-action btn-wa" onclick="shareReportWA()">💬 WhatsApp</button>
+      <button class="btn-action btn-outline" onclick="resetReport()">🔄 New Report</button>
+    </div>
+  </div><!-- /rpt-out -->
+
+</div>
+</div><!-- /panel-report -->
+
+
+<!-- ══════════════════════════════════════════
+     PAGE 2 — BILLING
+═══════════════════════════════════════════ -->
+<div class="page-panel" id="panel-bill">
+<div class="container">
+
+  <section class="panel-intro">
+    <h2>Billing Center</h2>
+    <p>Generate clean and trustworthy invoices your customers can pay immediately.</p>
+  </section>
+
+  <div class="steps" id="bill-steps">
+    <div class="step active" id="bs1"><div class="step-num">1</div><div>Details</div></div>
+    <div class="step" id="bs2"><div class="step-num">2</div><div>Items</div></div>
+    <div class="step" id="bs3"><div class="step-num">3</div><div>Invoice</div></div>
+  </div>
+
+  <!-- BILL FORM -->
+  <div id="bill-form">
+
+    <div class="card">
+      <div class="card-title blue"><div class="ico">🏬</div>Business Info</div>
+      <div class="row">
+        <div class="field"><label>Business Name <span class="req">*</span></label><input id="b-bname" required placeholder="e.g. Sharma AC Services"/></div>
+        <div class="field"><label>Owner / Tech Name</label><input id="b-owner" placeholder="Ramesh Sharma"/></div>
+      </div>
+      <div class="row one">
+        <div class="field">
+          <label>Business Logo</label>
+          <div class="logo-upload-row">
+            <input id="b-logo-input" type="file" accept="image/png,image/jpeg"/>
+            <button type="button" class="auto-gen-btn" onclick="clearLogo()">Remove Logo</button>
+          </div>
+        </div>
+      </div>
+      <div class="row one">
+        <div class="field"><label>Business Address</label><input id="b-baddr" placeholder="e.g. Shop 14, Main Road, Delhi"/></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Phone</label><input id="b-bphone" type="tel" placeholder="9876543210"/></div>
+        <div class="field"><label>GSTIN (optional)</label><input id="b-gstin" placeholder="e.g. 07AABCU9603R1ZX"/></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Business Email</label><input id="b-bemail" type="email" placeholder="support@yourcompany.com"/></div>
+        <div class="field"><label>Website</label><input id="b-bsite" placeholder="www.yourcompany.com"/></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title blue"><div class="ico">👤</div>Bill To (Customer)</div>
+      <div class="row">
+        <div class="field"><label>Customer Name <span class="req">*</span></label><input id="b-cname" required placeholder="Suresh Gupta"/></div>
+        <div class="field"><label>Phone</label><input id="b-cphone" type="tel" placeholder="9876543210"/></div>
+      </div>
+      <div class="row one">
+        <div class="field"><label>Address</label><input id="b-caddr" placeholder="Flat 302, Sector 14, Gurgaon"/></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Bill Date</label><input type="date" id="b-date"/></div>
+        <div class="field"><label>Due / Payment</label>
+          <select id="b-pay">
+            <option>Paid – Cash</option>
+            <option>Paid – UPI</option>
+            <option>Paid – Card</option>
+            <option>Pending Payment</option>
+            <option>Partial Payment</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Invoice Number</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="text" id="b-custominvnum" placeholder="INV-2024-001" style="flex:1;"/>
+            <button type="button" class="auto-gen-btn" onclick="autoGenInvNum()" title="Auto-generate">🔄</button>
+          </div>
+        </div>
+        <div class="field"><label>Theme</label>
+          <select id="b-theme">
+            <option value="corporate">Corporate Blue</option>
+            <option value="warm">Warm Professional</option>
+            <option value="dark">Modern Dark</option>
+            <option value="teal">Elegant Teal</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title blue"><div class="ico">📦</div>Items & Charges</div>
+
+      <table class="parts-tbl">
+        <thead>
+          <tr>
+            <th style="width:42%">Item / Service</th>
+            <th style="width:13%">Qty</th>
+            <th style="width:20%">Rate (₹)</th>
+            <th style="width:18%">Amount</th>
+            <th style="width:7%"></th>
+          </tr>
+        </thead>
+        <tbody id="bill-body">
+          <tr>
+            <td><input type="text" placeholder="Labour charges"/></td>
+            <td><input type="number" min="1" placeholder="1" oninput="calcBill()"/></td>
+            <td><input type="number" placeholder="0" oninput="calcBill()"/></td>
+            <td class="bill-amt" style="font-weight:600">₹0</td>
+            <td><button class="del-btn" onclick="delBillRow(this)">✕</button></td>
+          </tr>
+        </tbody>
+      </table>
+      <button class="add-btn" onclick="addBillRow()">+ Add Item / Part</button>
+
+      <div class="totals-box">
+        <div class="tot-row"><span>Subtotal</span><span id="b-sub">₹0</span></div>
+        <div class="tot-row" style="align-items:center;gap:8px;flex-wrap:wrap;">
+          <span>GST</span>
+          <span style="display:flex;align-items:center;gap:6px;">
+            <select id="b-gst" onchange="calcBill()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:3px 8px;border-radius:6px;font-size:12px;outline:none;">
+              <option value="0">No GST</option>
+              <option value="5">5%</option>
+              <option value="12">12%</option>
+              <option value="18">18%</option>
+              <option value="28">28%</option>
+            </select>
+            <span id="b-gstamt">₹0</span>
+          </span>
+        </div>
+        <div class="tot-row grand"><span>Total</span><span class="amt" id="b-grand">₹0</span></div>
+      </div>
+
+      <div class="row one" style="margin-top:14px;">
+        <div class="field"><label>Notes (optional)</label><textarea id="b-notes" placeholder="e.g. 3-month warranty on parts, next service due in June..." style="min-height:60px;"></textarea></div>
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <div class="field"><label>Payment Details</label><textarea id="b-paydetails" placeholder="e.g. Bank: ABC Bank, A/C: 1234567890, IFSC: ABCD0123456, UPI: yourname@upi" style="min-height:72px;"></textarea></div>
+        <div class="field"><label>Payment Terms</label><textarea id="b-terms" placeholder="e.g. Please pay within 30 days. Late payment may attract additional charges." style="min-height:72px;"></textarea></div>
+      </div>
+    </div>
+
+    <div id="bill-msg" class="msg"></div>
+
+    <button class="btn-primary blue-btn" onclick="generateBill()">
+      📄 Generate Invoice
+    </button>
+  </div><!-- /bill-form -->
+
+  <!-- BILL OUTPUT -->
+  <div id="bill-out">
+
+    <div class="preview-wrap invoice-template" id="bill-preview">
+      <div class="invoice-topline">
+        <div class="invoice-brand">
+          <img id="bo-logo" class="brand-logo bill-logo" alt="Company logo" hidden/>
+          <div>
+            <div class="invoice-brand-name" id="bo-bname">–</div>
+            <div class="invoice-brand-sub" id="bo-binfo">–</div>
+          </div>
+        </div>
+        <div class="invoice-heading">
+          <div class="invoice-title">INVOICE</div>
+          <div class="invoice-site" id="bo-bname2">–</div>
+        </div>
+      </div>
+
+      <div class="invoice-divider"></div>
+
+      <div class="invoice-meta">
+        <div class="invoice-to">
+          <div class="meta-label">Invoice to :</div>
+          <div class="meta-main" id="bo-cname">–</div>
+          <div class="meta-sub" id="bo-cphone">–</div>
+          <div class="meta-sub" id="bo-caddr">–</div>
+        </div>
+        <div class="invoice-no-wrap">
+          <div class="invoice-no">Invoice no : <span id="bo-invnum">#INV-0001</span></div>
+          <div class="invoice-date" id="bo-date">–</div>
+          <div class="invoice-pay" id="bo-pay">–</div>
+        </div>
+      </div>
+
+      <table class="bill-table invoice-table">
+        <thead>
+          <tr>
+            <th style="width:6%">NO</th>
+            <th style="width:40%">DESCRIPTION</th>
+            <th style="width:14%">QTY</th>
+            <th style="width:20%">PRICE</th>
+            <th style="width:20%">TOTAL</th>
+          </tr>
+        </thead>
+        <tbody id="bo-tbody"></tbody>
+      </table>
+
+      <div class="invoice-lower">
+        <div class="invoice-left-col">
+          <div class="details-box">
+            <div class="method-chip">PAYMENT DETAILS :</div>
+            <div class="method-value" id="bo-paydetails">–</div>
+            <div class="business-details" id="bo-baddr">–</div>
+            <div class="business-details" id="bo-gstin">–</div>
+            <div class="business-details" id="bo-bemail">–</div>
+            <div class="business-details" id="bo-bsite">–</div>
+          </div>
+
+          <div class="terms-panel" id="bo-terms-box" style="display:none;">
+            <div class="terms-title">PAYMENT TERMS :</div>
+            <span id="bo-terms">–</span>
+          </div>
+
+          <p class="thanks-text">Thank you for business with us!</p>
+
+          <div id="bo-notes-box" class="terms-box" style="display:none;">
+            <div class="terms-title">Term and Conditions :</div>
+            <span id="bo-notes">–</span>
           </div>
         </div>
 
-        <article id="pdfContent" class="pdf-sheet"></article>
-      </section>
+        <div class="invoice-right-col">
+          <div class="sum-row"><span>Sub Total :</span><strong id="bo-subshow">₹0</strong></div>
+          <div class="sum-row"><span id="bo-gstlabel">Tax 0% :</span><strong id="bo-gstshow">₹0</strong></div>
+          <div class="grand-band">
+            <span>GRAND TOTAL :</span>
+            <strong id="bo-grandshow">₹0</strong>
+          </div>
 
-      <section id="historySection" class="card hidden">
-        <div class="history-head">
-          <h3>Customer History</h3>
-          <input id="searchHistory" type="text" placeholder="Search by customer or phone" />
+          <div class="sign-box">
+            <div class="sign-name" id="bo-signname">Authorized Signatory</div>
+            <div class="sign-role">Administrator</div>
+          </div>
         </div>
-        <div id="historyList"></div>
-      </section>
-    </main>
-  </body>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-action btn-dark" onclick="downloadBillPDF()">📄 Download PDF</button>
+      <button class="btn-action btn-wa" onclick="shareBillWA()">💬 WhatsApp</button>
+      <button class="btn-action btn-blue-outline" onclick="resetBill()">🔄 New Bill</button>
+    </div>
+  </div><!-- /bill-out -->
+
+</div>
+</div><!-- /panel-bill -->
+
+
+<!-- ══════════════════════════════════════════
+     PAGE 3 — QUOTATION
+═══════════════════════════════════════════ -->
+<div class="page-panel" id="panel-quotation">
+<div class="container">
+  <section class="panel-intro">
+    <h2>Quotation Center</h2>
+    <p>Prepare polished quotations for customers with the same premium look as your reports and invoices.</p>
+  </section>
+
+  <div class="card quotation-coming-card">
+    <div class="card-title blue"><div class="ico">🚧</div>Feature Status</div>
+    <div class="quotation-coming-body">
+      <h3>Coming Soon</h3>
+      <p>Quotation module is currently building in progress.</p>
+      <p>We are adding quotation templates, line-item estimation, discount options, and PDF/WhatsApp sharing next.</p>
+      <div class="btn-row">
+        <button class="btn-action btn-dark" onclick="switchTab('bill')">💰 Use Billing For Now</button>
+        <button class="btn-action btn-wa" onclick="switchTab('report')">📋 Open Service Report</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div><!-- /panel-quotation -->
+
+
+<!-- ══════════════════════════════════════════
+     PAGE 4 — CONTACT
+═══════════════════════════════════════════ -->
+<div class="page-panel" id="panel-contact">
+<div class="container">
+  <section class="panel-intro contact-intro">
+    <h2>Business Contact Profile</h2>
+    <p>Keep your brand details synced across report preview, invoice preview, footer, and PDFs.</p>
+  </section>
+  <div class="card">
+    <div class="card-title"><div class="ico">📞</div>Contact</div>
+    <img id="contact-logo" class="brand-logo contact-logo" alt="Company logo" hidden/>
+    <div class="backend-status" id="backend-status">Backend: checking connection...</div>
+    <p class="contact-text">Use this page to keep your customer-facing details ready for report and invoice sharing.</p>
+    <div class="contact-box">
+      <div class="contact-label">Company Name</div>
+      <div class="contact-value" id="contact-company">Insight Reports Co.</div>
+    </div>
+    <div class="contact-box">
+      <div class="contact-label">Company Address</div>
+      <div class="contact-value" id="contact-address">Kolkata, West Bengal</div>
+    </div>
+    <div class="contact-box">
+      <div class="contact-label">Phone</div>
+      <div class="contact-value" id="contact-phone">Add your phone number in Service Report or Billing section.</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-action btn-dark" onclick="switchTab('report')">📋 Open Service Report</button>
+      <button class="btn-action btn-wa" onclick="switchTab('bill')">💰 Open Billing</button>
+    </div>
+
+    <div class="recent-services-grid">
+      <div class="recent-services-panel">
+        <div class="recent-panel-head">
+          <div>
+            <p class="recent-kicker">Recent Services</p>
+            <h3>Service Reports</h3>
+          </div>
+          <span class="recent-chip">Latest 5</span>
+        </div>
+        <div id="recent-reports" class="service-card-grid"></div>
+      </div>
+
+      <div class="recent-services-panel">
+        <div class="recent-panel-head">
+          <div>
+            <p class="recent-kicker">Billing History</p>
+            <h3>Recent Invoices</h3>
+          </div>
+          <span class="recent-chip accent">Latest 5</span>
+        </div>
+        <div id="recent-invoices" class="service-card-grid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div><!-- /panel-contact -->
+
+<footer class="site-footer">
+  <div class="footer-shell">
+    <div class="footer-top">
+      <div class="footer-brand-col">
+        <img id="footer-logo" class="brand-logo footer-logo" alt="Company logo" hidden/>
+        <div class="footer-brand" id="footer-company">Insight Reports Co.</div>
+        <div class="footer-address" id="footer-address">Kolkata, West Bengal</div>
+      </div>
+
+      <div class="footer-link-col">
+        <h4>Navigation</h4>
+        <div class="footer-links">
+          <button type="button" onclick="switchTab('report')">Service Report</button>
+          <button type="button" onclick="switchTab('bill')">Billing</button>
+          <button type="button" onclick="switchTab('quotation')">Quotation</button>
+          <button type="button" onclick="switchTab('contact')">Contact</button>
+        </div>
+      </div>
+
+      <div class="footer-link-col">
+        <h4>Platform</h4>
+        <p>PDF exports, WhatsApp sharing, and synced history for technicians and service businesses.</p>
+      </div>
+    </div>
+
+    <div class="footer-meta">
+      <span>Built for field service teams</span>
+      <span>Made by <a href="https://dsbiomedicalservices.debojyoti.online/" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;">DS BIOMEDICAL &amp; IT SERVICES</a></span>
+    </div>
+  </div>
+</footer>
+
+<nav class="mobile-bottom-nav" aria-label="Mobile Navigation">
+  <button class="mobile-nav-btn active" id="mtab-report" onclick="switchTab('report')">📋 Report</button>
+  <button class="mobile-nav-btn" id="mtab-bill" onclick="switchTab('bill')">💰 Billing</button>
+  <button class="mobile-nav-btn" id="mtab-quotation" onclick="switchTab('quotation')">🧾 Quote</button>
+  <button class="mobile-nav-btn" id="mtab-contact" onclick="switchTab('contact')">📞 Contact</button>
+</nav>
+
+</body>
 </html>

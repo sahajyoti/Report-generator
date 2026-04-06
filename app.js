@@ -1,569 +1,803 @@
-const STORAGE_KEYS = {
-  customers: "fieldpro_customers",
-  reports: "fieldpro_reports",
-};
+// ─── ANTHROPIC API CONFIG ───
+// Replace with your actual API key
+const ANTHROPIC_API_KEY = "sk-ant-v3-YOUR_API_KEY_HERE";
+const BRAND_LOGO_STORAGE_KEY = 'fieldproCompanyLogo';
+let companyLogoDataUrl = '';
+const API_BASE = '/api';
 
-let customers = load(STORAGE_KEYS.customers, []);
-let reports = load(STORAGE_KEYS.reports, []);
-let currentStep = 1;
-let drawing = false;
-let lastSignatureData = "";
-
-const invoicePrefix = "INV-";
-const todayIso = () => new Date().toISOString();
-const formatDate = (iso) => new Date(iso).toLocaleString("en-IN");
-
-const el = {
-  todayCount: document.getElementById("todayCount"),
-  customerCount: document.getElementById("customerCount"),
-  invoiceCount: document.getElementById("invoiceCount"),
-  newReportBtn: document.getElementById("newReportBtn"),
-  newReportTopBtn: document.getElementById("newReportTopBtn"),
-  historyBtn: document.getElementById("historyBtn"),
-  wizardSection: document.getElementById("wizardSection"),
-  previewSection: document.getElementById("previewSection"),
-  historySection: document.getElementById("historySection"),
-  stepLabel: document.getElementById("stepLabel"),
-  steps: document.querySelectorAll(".step"),
-  prevBtn: document.getElementById("prevBtn"),
-  nextBtn: document.getElementById("nextBtn"),
-  customerSelect: document.getElementById("customerSelect"),
-  customerName: document.getElementById("customerName"),
-  customerPhone: document.getElementById("customerPhone"),
-  customerAddress: document.getElementById("customerAddress"),
-  serviceType: document.getElementById("serviceType"),
-  problem: document.getElementById("problem"),
-  workDone: document.getElementById("workDone"),
-  technicianName: document.getElementById("technicianName"),
-  partsList: document.getElementById("partsList"),
-  addPartBtn: document.getElementById("addPartBtn"),
-  serviceCharge: document.getElementById("serviceCharge"),
-  notes: document.getElementById("notes"),
-  gstEnabled: document.getElementById("gstEnabled"),
-  gstPercent: document.getElementById("gstPercent"),
-  subtotal: document.getElementById("subtotal"),
-  gstAmount: document.getElementById("gstAmount"),
-  totalAmount: document.getElementById("totalAmount"),
-  signaturePad: document.getElementById("signaturePad"),
-  clearSignBtn: document.getElementById("clearSignBtn"),
-  saveReportBtn: document.getElementById("saveReportBtn"),
-  pdfContent: document.getElementById("pdfContent"),
-  downloadPdfBtn: document.getElementById("downloadPdfBtn"),
-  shareWaBtn: document.getElementById("shareWaBtn"),
-  searchHistory: document.getElementById("searchHistory"),
-  historyList: document.getElementById("historyList"),
-};
-
-function init() {
-  bindEvents();
-  addPartRow();
-  renderCustomerSelect();
-  renderDashboard();
-  renderHistory();
-  resizeCanvas();
+// ─── TAB SWITCH ───
+function switchTab(t) {
+  closeMobileNav();
+  document.querySelectorAll('.page-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.page-tab').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.mobile-nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + t).classList.add('active');
+  document.getElementById('tab-' + t).classList.add('active');
+  const mobileBtn = document.getElementById('mtab-' + t);
+  if (mobileBtn) mobileBtn.classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
 }
 
-function bindEvents() {
-  el.newReportBtn.addEventListener("click", openWizard);
-  el.newReportTopBtn.addEventListener("click", openWizard);
-  el.historyBtn.addEventListener("click", () => {
-    el.historySection.classList.toggle("hidden");
-    renderHistory(el.searchHistory.value);
-  });
+function toggleMobileNav() {
+  document.body.classList.toggle('mobile-nav-open');
+}
 
-  el.prevBtn.addEventListener("click", () => moveStep(-1));
-  el.nextBtn.addEventListener("click", () => moveStep(1));
-  el.addPartBtn.addEventListener("click", addPartRow);
+function closeMobileNav() {
+  document.body.classList.remove('mobile-nav-open');
+}
 
-  el.partsList.addEventListener("input", updateTotals);
-  el.partsList.addEventListener("click", (event) => {
-    if (event.target.matches(".remove-part")) {
-      event.target.closest(".part-row").remove();
-      updateTotals();
+function updateLogoTargets(src) {
+  const hasLogo = Boolean(src);
+  ['contact-logo', 'footer-logo', 'csr-logo', 'bo-logo'].forEach(id => {
+    const img = document.getElementById(id);
+    if (!img) return;
+    if (hasLogo) {
+      img.src = src;
+      img.style.display = 'inline-block';
+      img.hidden = false;
+    } else {
+      img.removeAttribute('src');
+      img.style.display = 'none';
+      img.hidden = true;
     }
   });
-
-  el.serviceCharge.addEventListener("input", updateTotals);
-  el.gstEnabled.addEventListener("change", updateTotals);
-  el.gstPercent.addEventListener("input", updateTotals);
-
-  el.customerSelect.addEventListener("change", () => {
-    const customer = customers.find((c) => c.id === el.customerSelect.value);
-    if (!customer) return;
-    el.customerName.value = customer.name;
-    el.customerPhone.value = customer.phone;
-    el.customerAddress.value = customer.address || "";
-  });
-
-  initSignaturePad();
-  el.clearSignBtn.addEventListener("click", clearSignature);
-  el.saveReportBtn.addEventListener("click", saveReport);
-  el.downloadPdfBtn.addEventListener("click", downloadPdf);
-  el.shareWaBtn.addEventListener("click", shareWhatsApp);
-  el.searchHistory.addEventListener("input", (e) => renderHistory(e.target.value));
-
-  window.addEventListener("resize", resizeCanvas);
 }
 
-function openWizard() {
-  el.wizardSection.classList.remove("hidden");
-  el.previewSection.classList.add("hidden");
-  currentStep = 1;
-  updateStepUI();
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
-function moveStep(delta) {
-  if (delta > 0 && !validateStep(currentStep)) return;
-  currentStep = Math.min(5, Math.max(1, currentStep + delta));
-  updateStepUI();
-  if (currentStep === 4) updateTotals();
-}
-
-function updateStepUI() {
-  el.steps.forEach((node) => {
-    node.classList.toggle("hidden", Number(node.dataset.step) !== currentStep);
-  });
-  el.stepLabel.textContent = `Step ${currentStep} of 5`;
-  el.prevBtn.style.visibility = currentStep === 1 ? "hidden" : "visible";
-  el.nextBtn.style.display = currentStep === 5 ? "none" : "inline-block";
-}
-
-function validateStep(step) {
-  if (step === 1) {
-    if (!el.customerName.value.trim() || !el.customerPhone.value.trim()) {
-      alert("Please add customer name and phone number.");
-      return false;
-    }
-  }
-  if (step === 2) {
-    if (!el.problem.value.trim() || !el.workDone.value.trim()) {
-      alert("Please add problem and work done.");
-      return false;
-    }
-  }
-  if (step === 3 && !el.serviceCharge.value) {
-    alert("Please add service charge.");
-    return false;
-  }
-  return true;
-}
-
-function addPartRow() {
-  const row = document.createElement("div");
-  row.className = "part-row";
-  row.innerHTML = `
-    <input type="text" class="part-name" placeholder="Part name" />
-    <input type="number" class="part-qty" min="1" value="1" />
-    <input type="number" class="part-rate" min="0" placeholder="Rate" />
-    <button type="button" class="icon-btn remove-part" aria-label="Remove">X</button>
-  `;
-  el.partsList.appendChild(row);
-}
-
-function readParts() {
-  return [...document.querySelectorAll(".part-row")]
-    .map((row) => {
-      const part = row.querySelector(".part-name").value.trim();
-      const qty = Number(row.querySelector(".part-qty").value || 0);
-      const rate = Number(row.querySelector(".part-rate").value || 0);
-      return { part, qty, rate, amount: qty * rate };
-    })
-    .filter((item) => item.part && item.qty > 0);
-}
-
-function updateTotals() {
-  const parts = readParts();
-  const partsTotal = parts.reduce((acc, part) => acc + part.amount, 0);
-  const service = Number(el.serviceCharge.value || 0);
-  const subtotal = partsTotal + service;
-  const gst = el.gstEnabled.checked ? (subtotal * Number(el.gstPercent.value || 0)) / 100 : 0;
-  const total = subtotal + gst;
-
-  el.subtotal.textContent = money(subtotal);
-  el.gstAmount.textContent = money(gst);
-  el.totalAmount.textContent = money(total);
-}
-
-function money(value) {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 2,
-  }).format(value || 0);
-}
-
-function initSignaturePad() {
-  const canvas = el.signaturePad;
-  const ctx = canvas.getContext("2d");
-  ctx.lineWidth = 2;
-  ctx.lineCap = "round";
-  ctx.strokeStyle = "#1f2937";
-
-  const getPos = (event) => {
-    const rect = canvas.getBoundingClientRect();
-    if (event.touches && event.touches[0]) {
-      return {
-        x: event.touches[0].clientX - rect.left,
-        y: event.touches[0].clientY - rect.top,
-      };
-    }
-    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
-  };
-
-  const start = (event) => {
-    drawing = true;
-    const { x, y } = getPos(event);
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    event.preventDefault();
-  };
-
-  const draw = (event) => {
-    if (!drawing) return;
-    const { x, y } = getPos(event);
-    ctx.lineTo(x, y);
-    ctx.stroke();
-    event.preventDefault();
-  };
-
-  const end = () => {
-    drawing = false;
-    lastSignatureData = canvas.toDataURL("image/png");
-  };
-
-  canvas.addEventListener("mousedown", start);
-  canvas.addEventListener("mousemove", draw);
-  window.addEventListener("mouseup", end);
-
-  canvas.addEventListener("touchstart", start, { passive: false });
-  canvas.addEventListener("touchmove", draw, { passive: false });
-  window.addEventListener("touchend", end);
-}
-
-function resizeCanvas() {
-  const canvas = el.signaturePad;
-  const data = canvas.toDataURL();
-  const tempImg = new Image();
-
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width * devicePixelRatio;
-  canvas.height = 180 * devicePixelRatio;
-  const ctx = canvas.getContext("2d");
-  ctx.scale(devicePixelRatio, devicePixelRatio);
-  ctx.lineWidth = 2;
-  ctx.lineCap = "round";
-  ctx.strokeStyle = "#1f2937";
-
-  tempImg.onload = () => {
-    ctx.drawImage(tempImg, 0, 0, rect.width, 180);
-  };
-  tempImg.src = data;
-}
-
-function clearSignature() {
-  const canvas = el.signaturePad;
-  const ctx = canvas.getContext("2d");
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  lastSignatureData = "";
-}
-
-function upsertCustomer() {
-  const name = el.customerName.value.trim();
-  const phone = el.customerPhone.value.trim();
-  const address = el.customerAddress.value.trim();
-  let customer = customers.find((c) => c.phone === phone);
-
-  if (customer) {
-    customer.name = name;
-    customer.address = address;
+function persistCompanyLogo(dataUrl) {
+  companyLogoDataUrl = dataUrl || '';
+  if (companyLogoDataUrl) {
+    localStorage.setItem(BRAND_LOGO_STORAGE_KEY, companyLogoDataUrl);
   } else {
-    customer = { id: crypto.randomUUID(), name, phone, address, createdAt: todayIso() };
-    customers.unshift(customer);
+    localStorage.removeItem(BRAND_LOGO_STORAGE_KEY);
   }
-
-  persist(STORAGE_KEYS.customers, customers);
-  return customer;
+  updateLogoTargets(companyLogoDataUrl);
 }
 
-function saveReport() {
-  if (!validateStep(1) || !validateStep(2) || !validateStep(3)) return;
-
-  const customer = upsertCustomer();
-  const parts = readParts();
-  const serviceCharge = Number(el.serviceCharge.value || 0);
-  const subtotal = serviceCharge + parts.reduce((sum, p) => sum + p.amount, 0);
-  const gstPercent = el.gstEnabled.checked ? Number(el.gstPercent.value || 0) : 0;
-  const gstAmount = (subtotal * gstPercent) / 100;
-  const total = subtotal + gstAmount;
-  const createdAt = todayIso();
-
-  const report = {
-    id: crypto.randomUUID(),
-    customerId: customer.id,
-    customerName: customer.name,
-    customerPhone: customer.phone,
-    customerAddress: customer.address,
-    serviceType: el.serviceType.value,
-    problem: el.problem.value.trim(),
-    workDone: el.workDone.value.trim(),
-    technicianName: el.technicianName.value.trim() || "Technician",
-    parts,
-    notes: el.notes.value.trim(),
-    serviceCharge,
-    gstPercent,
-    gstAmount,
-    subtotal,
-    total,
-    signature: lastSignatureData,
-    invoiceNumber: `${invoicePrefix}${Date.now().toString().slice(-6)}`,
-    createdAt,
-  };
-
-  reports.unshift(report);
-  persist(STORAGE_KEYS.reports, reports);
-
-  renderCustomerSelect();
-  renderDashboard();
-  renderHistory();
-  buildPreview(report);
-
-  el.previewSection.classList.remove("hidden");
-  el.historySection.classList.remove("hidden");
-  alert("Report saved successfully.");
-  window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-}
-
-function buildPreview(report) {
-  const partRows = report.parts.length
-    ? report.parts
-        .map(
-          (p) =>
-            `<tr><td>${escapeHtml(p.part)}</td><td>${p.qty}</td><td>${money(p.rate)}</td><td>${money(
-              p.amount
-            )}</td></tr>`
-        )
-        .join("")
-    : `<tr><td colspan="4">No parts used</td></tr>`;
-
-  el.pdfContent.innerHTML = `
-    <div class="pdf-head">
-      <div>
-        <h2 style="margin:0">Service Report & Invoice</h2>
-        <p style="margin:4px 0;color:#555">FieldPro Reports</p>
-      </div>
-      <div>
-        <p style="margin:0"><strong>Invoice:</strong> ${report.invoiceNumber}</p>
-        <p style="margin:4px 0"><strong>Date:</strong> ${formatDate(report.createdAt)}</p>
-      </div>
-    </div>
-
-    <div class="pdf-grid">
-      <div>
-        <h4>Customer Details</h4>
-        <p><strong>${escapeHtml(report.customerName)}</strong></p>
-        <p>${escapeHtml(report.customerPhone)}</p>
-        <p>${escapeHtml(report.customerAddress || "-")}</p>
-      </div>
-      <div>
-        <h4>Service Details</h4>
-        <p><strong>Type:</strong> ${escapeHtml(report.serviceType)}</p>
-        <p><strong>Technician:</strong> ${escapeHtml(report.technicianName)}</p>
-      </div>
-    </div>
-
-    <div class="pdf-section">
-      <h4>Issue & Work Done</h4>
-      <p><strong>Problem:</strong> ${escapeHtml(report.problem)}</p>
-      <p><strong>Work Done:</strong> ${escapeHtml(report.workDone)}</p>
-      <p><strong>Notes:</strong> ${escapeHtml(report.notes || "-")}</p>
-    </div>
-
-    <div class="pdf-section">
-      <h4>Parts Used</h4>
-      <table class="pdf-table">
-        <thead>
-          <tr><th>Part</th><th>Qty</th><th>Rate</th><th>Amount</th></tr>
-        </thead>
-        <tbody>${partRows}</tbody>
-      </table>
-    </div>
-
-    <div class="pdf-section">
-      <table class="pdf-table">
-        <tbody>
-          <tr><td>Service Charge</td><td>${money(report.serviceCharge)}</td></tr>
-          <tr><td>Subtotal</td><td>${money(report.subtotal)}</td></tr>
-          <tr><td>GST (${report.gstPercent}%)</td><td>${money(report.gstAmount)}</td></tr>
-          <tr><td><strong>Total</strong></td><td><strong>${money(report.total)}</strong></td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="pdf-grid pdf-section">
-      <div>
-        <p><strong>Customer Signature</strong></p>
-        ${
-          report.signature
-            ? `<img src="${report.signature}" alt="Signature" class="pdf-signature" />`
-            : `<p>Not signed</p>`
-        }
-      </div>
-      <div>
-        <p><strong>Status:</strong> Generated</p>
-        <p><strong>Contact:</strong> ${escapeHtml(report.customerPhone)}</p>
-      </div>
-    </div>
-  `;
-}
-
-function renderCustomerSelect() {
-  const options = customers
-    .map((c) => `<option value="${c.id}">${escapeHtml(c.name)} (${escapeHtml(c.phone)})</option>`)
-    .join("");
-  el.customerSelect.innerHTML = `<option value="">Select customer</option>${options}`;
-}
-
-function renderDashboard() {
-  const today = new Date().toDateString();
-  const todayReports = reports.filter((r) => new Date(r.createdAt).toDateString() === today).length;
-
-  el.todayCount.textContent = todayReports;
-  el.customerCount.textContent = customers.length;
-  el.invoiceCount.textContent = reports.length;
-}
-
-function renderHistory(search = "") {
-  const query = search.trim().toLowerCase();
-  const filtered = reports.filter((r) => {
-    if (!query) return true;
-    return (
-      r.customerName.toLowerCase().includes(query) ||
-      r.customerPhone.toLowerCase().includes(query) ||
-      r.invoiceNumber.toLowerCase().includes(query)
-    );
-  });
-
-  if (!filtered.length) {
-    el.historyList.innerHTML = `<p class="muted">No reports found.</p>`;
+function handleLogoUpload(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) {
+    alert('Please upload an image file.');
     return;
   }
 
-  el.historyList.innerHTML = filtered
-    .map(
-      (r) => `
-      <article class="history-item">
-        <p><strong>${escapeHtml(r.customerName)}</strong> (${escapeHtml(r.customerPhone)})</p>
-        <p>${escapeHtml(r.serviceType)} | ${money(r.total)} | ${formatDate(r.createdAt)}</p>
-        <div class="button-row">
-          <button class="btn btn-secondary" data-view="${r.id}">View</button>
-          <button class="btn btn-ghost" data-wa="${r.id}">WhatsApp</button>
-        </div>
-      </article>
-    `
-    )
-    .join("");
+  const reader = new FileReader();
+  reader.onload = () => persistCompanyLogo(reader.result || '');
+  reader.readAsDataURL(file);
+}
 
-  el.historyList.querySelectorAll("[data-view]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const report = reports.find((r) => r.id === btn.dataset.view);
-      if (!report) return;
-      buildPreview(report);
-      el.previewSection.classList.remove("hidden");
-      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-    });
-  });
-
-  el.historyList.querySelectorAll("[data-wa]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const report = reports.find((r) => r.id === btn.dataset.wa);
-      if (!report) return;
-      shareWhatsApp(report);
-    });
+function clearLogo() {
+  persistCompanyLogo('');
+  ['company-logo-input', 'b-logo-input'].forEach(id => {
+    const input = document.getElementById(id);
+    if (input) input.value = '';
   });
 }
 
-function downloadPdf() {
-  const node = el.pdfContent;
-  if (!node.innerHTML.trim()) {
-    alert("Please generate a report first.");
-    return;
-  }
-
-  if (!window.html2pdf) {
-    window.print();
-    return;
-  }
-
-  const originalText = el.downloadPdfBtn.textContent;
-  el.downloadPdfBtn.disabled = true;
-  el.downloadPdfBtn.textContent = "Generating...";
-  node.classList.add("pdf-export-compact");
-
-  const options = {
-    margin: [4, 4, 4, 4],
-    filename: `report-${Date.now()}.pdf`,
-    image: { type: "jpeg", quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
-    pagebreak: { mode: ["avoid-all", "css", "legacy"] },
-    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-  };
-
-  window
-    .html2pdf()
-    .set(options)
-    .from(node)
-    .save()
-    .catch((error) => {
-      console.error("PDF generation failed", error);
-      alert("Unable to generate PDF. Using print instead.");
-      window.print();
-    })
-    .finally(() => {
-      node.classList.remove("pdf-export-compact");
-      el.downloadPdfBtn.disabled = false;
-      el.downloadPdfBtn.textContent = originalText;
-    });
+function getLogoFormat(dataUrl) {
+  if (!dataUrl) return 'PNG';
+  if (dataUrl.startsWith('data:image/jpeg') || dataUrl.startsWith('data:image/jpg')) return 'JPEG';
+  if (dataUrl.startsWith('data:image/png')) return 'PNG';
+  return 'PNG';
 }
 
-function shareWhatsApp(reportInput) {
-  let report = reportInput;
-  if (!report) {
-    report = reports[0];
-  }
-
-  if (!report) {
-    alert("Please create at least one report first.");
-    return;
-  }
-
-  const msg = `Service Report Ready%0AInvoice: ${report.invoiceNumber}%0ACustomer: ${encodeURIComponent(
-    report.customerName
-  )}%0ATotal: ${encodeURIComponent(money(report.total))}%0AThank you.`;
-
-  const url = `https://wa.me/?text=${msg}`;
-  window.open(url, "_blank");
-}
-
-function load(key, fallback) {
+function safeAddLogoToPdf(doc, x, y, w, h) {
+  if (!companyLogoDataUrl) return;
   try {
-    return JSON.parse(localStorage.getItem(key)) || fallback;
-  } catch {
-    return fallback;
+    if (!/^data:image\/(png|jpeg|jpg);base64,/i.test(companyLogoDataUrl)) return;
+    doc.addImage(companyLogoDataUrl, getLogoFormat(companyLogoDataUrl), x, y, w, h);
+  } catch (_err) {
+    // Ignore logo rendering failures so PDF download still works.
   }
 }
 
-function persist(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
+function getPreferredCompanyName() {
+  return (
+    document.getElementById('r-company')?.value.trim() ||
+    document.getElementById('b-bname')?.value.trim() ||
+    'Insight Reports Co.'
+  );
+}
+
+function getPreferredCompanyAddress() {
+  return (
+    document.getElementById('r-companyaddr')?.value.trim() ||
+    document.getElementById('b-baddr')?.value.trim() ||
+    'Kolkata, West Bengal'
+  );
+}
+
+function getPreferredCompanyPhone() {
+  return (
+    document.getElementById('r-phone')?.value.trim() ||
+    document.getElementById('b-bphone')?.value.trim() ||
+    'Add your phone number in Service Report or Billing section.'
+  );
+}
+
+function refreshBrandingContact() {
+  const company = getPreferredCompanyName();
+  const address = getPreferredCompanyAddress();
+  const phone = getPreferredCompanyPhone();
+
+  const footerCompany = document.getElementById('footer-company');
+  const footerAddress = document.getElementById('footer-address');
+  const contactCompany = document.getElementById('contact-company');
+  const contactAddress = document.getElementById('contact-address');
+  const contactPhone = document.getElementById('contact-phone');
+
+  if (footerCompany) footerCompany.textContent = company;
+  if (footerAddress) footerAddress.textContent = address;
+  if (contactCompany) contactCompany.textContent = company;
+  if (contactAddress) contactAddress.textContent = address;
+  if (contactPhone) contactPhone.textContent = phone;
+  updateLogoTargets(companyLogoDataUrl);
+}
+
+function setBackendStatus(text, isOnline) {
+  const el = document.getElementById('backend-status');
+  if (!el) return;
+  el.textContent = text;
+  el.classList.toggle('offline', !isOnline);
 }
 
 function escapeHtml(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
-init();
+function formatDateShort(iso) {
+  if (!iso) return 'Date N/A';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return 'Date N/A';
+  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function getCompanyCode(companyName) {
+  const parts = String(companyName || '')
+    .replace(/[^a-z0-9\s]/gi, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (!parts.length) return 'FP';
+
+  const initials = parts
+    .slice(0, 4)
+    .map(part => part[0])
+    .join('')
+    .toUpperCase();
+
+  return initials.slice(0, 4) || 'FP';
+}
+
+function buildReportNumber(companyName) {
+  const year = new Date().getFullYear();
+  const code = getCompanyCode(companyName);
+  const suffix = String(Math.floor(Math.random() * 9000) + 1000);
+  return `SR-${code}-${year}-${suffix}`;
+}
+
+async function apiRequest(path, options = {}) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
+    },
+    ...options
+  });
+  if (!res.ok) {
+    let msg = `Request failed (${res.status})`;
+    try {
+      const body = await res.json();
+      if (body && body.error) msg = body.error;
+    } catch (_err) {
+      // Ignore parse errors, fallback to generic message.
+    }
+    throw new Error(msg);
+  }
+  return res.json();
+}
+
+async function saveReportToBackend(d) {
+  const reportNumber = document.getElementById('csr-rptnum')?.textContent?.trim() || '';
+  const payload = {
+    reportNumber,
+    serviceDate: d.date || null,
+    status: d.status || '',
+    deviceType: d.dev || '',
+    brandModel: d.brand || '',
+    companyName: d.co || '',
+    companyAddress: d.companyAddr || '',
+    technicianName: d.tech || '',
+    technicianPhone: d.phone || '',
+    city: d.city || '',
+    customerName: d.cn || '',
+    customerPhone: d.cphone || '',
+    customerAddress: d.caddr || '',
+    complaint: d.complaint || '',
+    workPerformed: d.workPerformed || d.work || '',
+    diagnosis: d.diagnosis || '',
+    recommendations: d.recommendations || '',
+    warranty: d.warranty || ''
+  };
+  return apiRequest('/reports', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+async function saveInvoiceToBackend(d) {
+  const invoiceNumber = document.getElementById('bo-invnum')?.textContent?.replace('#', '').trim() || '';
+  const payload = {
+    invoiceNumber,
+    billDate: d.date || null,
+    paymentStatus: d.pay || '',
+    businessName: d.bname || '',
+    ownerName: d.owner || '',
+    businessPhone: d.bphone || '',
+    businessEmail: d.bemail || '',
+    businessWebsite: d.bsite || '',
+    businessAddress: d.baddr || '',
+    gstin: d.gstin || '',
+    customerName: d.cname || '',
+    customerPhone: d.cphone || '',
+    customerAddress: d.caddr || '',
+    subtotal: d.sub || 0,
+    gstRate: d.gstR || 0,
+    gstAmount: d.gstA || 0,
+    grandTotal: d.grand || 0,
+    notes: d.notes || '',
+    items: d.rows || []
+  };
+  return apiRequest('/invoices', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+async function loadRecentActivity() {
+  const reportList = document.getElementById('recent-reports');
+  const invoiceList = document.getElementById('recent-invoices');
+  if (!reportList || !invoiceList) return;
+
+  reportList.innerHTML = '<div class="service-mini-card">Loading...</div>';
+  invoiceList.innerHTML = '<div class="service-mini-card">Loading...</div>';
+
+  const reportCard = (r) => {
+    const serviceDate = formatDateShort(r.service_date || r.created_at);
+    const status = r.status || 'Completed';
+    const statusClass = String(status).toLowerCase().includes('pending') ? 'warn' : String(status).toLowerCase().includes('warranty') ? 'info' : 'ok';
+    return `
+      <article class="service-mini-card">
+        <div class="service-mini-top">
+          <span class="service-mini-badge">Report</span>
+          <span class="service-mini-status ${statusClass}">${escapeHtml(status)}</span>
+        </div>
+        <h4>${escapeHtml(r.report_number || 'Report')}</h4>
+        <p class="service-mini-name">${escapeHtml(r.customer_name || 'Unknown Customer')}</p>
+        <div class="service-mini-meta">
+          <span>${escapeHtml(r.device_type || 'Service')}</span>
+          <span>${escapeHtml(serviceDate)}</span>
+        </div>
+      </article>`;
+  };
+
+  const invoiceCard = (i) => {
+    const billDate = formatDateShort(i.bill_date || i.created_at);
+    const amount = Number(i.grand_total || 0).toLocaleString('en-IN');
+    const payment = i.payment_status || 'Paid';
+    return `
+      <article class="service-mini-card">
+        <div class="service-mini-top">
+          <span class="service-mini-badge alt">Invoice</span>
+          <span class="service-mini-status ok">${escapeHtml(payment)}</span>
+        </div>
+        <h4>${escapeHtml(i.invoice_number || 'Invoice')}</h4>
+        <p class="service-mini-name">${escapeHtml(i.customer_name || 'Unknown Customer')}</p>
+        <div class="service-mini-meta">
+          <span>₹${escapeHtml(amount)}</span>
+          <span>${escapeHtml(billDate)}</span>
+        </div>
+      </article>`;
+  };
+
+  try {
+    const [reportsRes, invoicesRes] = await Promise.all([
+      apiRequest('/reports?limit=5'),
+      apiRequest('/invoices?limit=5')
+    ]);
+
+    const reports = reportsRes.data || [];
+    const invoices = invoicesRes.data || [];
+
+    reportList.innerHTML = reports.length
+      ? reports
+          .map(reportCard)
+          .join('')
+      : '<div class="service-mini-card empty">No reports saved yet.</div>';
+
+    invoiceList.innerHTML = invoices.length
+      ? invoices
+          .map(invoiceCard)
+          .join('')
+      : '<div class="service-mini-card empty">No invoices saved yet.</div>';
+  } catch (_err) {
+    reportList.innerHTML = '<div class="service-mini-card empty">Backend unavailable</div>';
+    invoiceList.innerHTML = '<div class="service-mini-card empty">Backend unavailable</div>';
+  }
+}
+
+async function initializeBackendConnection() {
+  try {
+    await apiRequest('/health');
+    setBackendStatus('Backend: connected', true);
+    await loadRecentActivity();
+  } catch (_err) {
+    setBackendStatus('Backend: offline (start Node server)', false);
+  }
+}
+
+// ─── DEFAULTS ───
+const savedLogo = localStorage.getItem(BRAND_LOGO_STORAGE_KEY) || '';
+if (savedLogo) persistCompanyLogo(savedLogo);
+
+const logoInput = document.getElementById('company-logo-input');
+if (logoInput) logoInput.addEventListener('change', handleLogoUpload);
+const billLogoInput = document.getElementById('b-logo-input');
+if (billLogoInput) billLogoInput.addEventListener('change', handleLogoUpload);
+
+refreshBrandingContact();
+initializeBackendConnection();
+
+['r-company', 'b-bname', 'r-companyaddr', 'b-baddr', 'r-phone', 'b-bphone'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', refreshBrandingContact);
+});
+
+
+// ─── AUTO-GENERATE FUNCTIONS ───
+function autoGenReportNum() {
+  const companyName = document.getElementById('r-company')?.value.trim() || getPreferredCompanyName();
+  const reportNumberInput = document.getElementById('r-rptnum');
+  if (reportNumberInput) reportNumberInput.value = buildReportNumber(companyName);
+}
+
+function autoGenInvNum() {
+  const year = new Date().getFullYear();
+  const num = String(Math.floor(Math.random() * 9000) + 1000);
+  document.getElementById('b-custominvnum').value = `INV-${year}-${num}`;
+}
+
+// ─── THEME APPLICATION ───
+function applyReportTheme() {
+  const theme = document.getElementById('r-theme').value || 'corporate';
+  const preview = document.getElementById('rpt-preview');
+  preview.classList.remove('theme-corporate', 'theme-warm', 'theme-dark', 'theme-teal');
+  preview.classList.add('theme-' + theme);
+}
+
+function applyBillTheme() {
+  const theme = document.getElementById('b-theme').value || 'corporate';
+  const preview = document.getElementById('bill-preview');
+  preview.classList.remove('theme-corporate', 'theme-warm', 'theme-dark', 'theme-teal');
+  preview.classList.add('theme-' + theme);
+}
+
+// ─── BILL TABLE ───
+function addBillRow() {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="text" placeholder="Item name"/></td>
+    <td><input type="number" min="1" placeholder="1" oninput="calcBill()"/></td>
+    <td><input type="number" placeholder="0" oninput="calcBill()"/></td>
+    <td class="bill-amt" style="font-weight:600">₹0</td>
+    <td><button class="del-btn" onclick="delBillRow(this)">✕</button></td>`;
+  document.getElementById('bill-body').appendChild(tr);
+}
+function delBillRow(btn) { btn.closest('tr').remove(); calcBill(); }
+function calcBill() {
+  let sub = 0;
+  document.querySelectorAll('#bill-body tr').forEach(r => {
+    const qty = parseFloat(r.cells[1].querySelector('input').value)||0;
+    const rate = parseFloat(r.cells[2].querySelector('input').value)||0;
+    const a = qty*rate; sub += a;
+    r.querySelector('.bill-amt').textContent = '₹'+a.toLocaleString('en-IN');
+  });
+  const gr = parseFloat(document.getElementById('b-gst').value)||0;
+  const ga = sub*gr/100;
+  document.getElementById('b-sub').textContent = '₹'+sub.toLocaleString('en-IN');
+  document.getElementById('b-gstamt').textContent = '₹'+ga.toLocaleString('en-IN');
+  document.getElementById('b-grand').textContent = '₹'+(sub+ga).toLocaleString('en-IN');
+}
+
+// ─── GENERATE BILL ───
+let billData = {};
+async function generateBill() {
+  const bname = document.getElementById('b-bname').value.trim();
+  const cname = document.getElementById('b-cname').value.trim();
+  const msgEl = document.getElementById('bill-msg');
+  msgEl.className = 'msg';
+  if (!bname) { msgEl.className='msg err'; msgEl.textContent='⚠️ Enter business name.'; return; }
+  if (!cname) { msgEl.className='msg err'; msgEl.textContent='⚠️ Enter customer name.'; return; }
+
+  const rows = [];
+  document.querySelectorAll('#bill-body tr').forEach(r => {
+    const n = r.cells[0].querySelector('input').value.trim();
+    const q = parseFloat(r.cells[1].querySelector('input').value)||0;
+    const rt = parseFloat(r.cells[2].querySelector('input').value)||0;
+    if (n || q > 0 || rt > 0) {
+      rows.push({
+        name: n || 'Service Item',
+        qty: q || 1,
+        rate: rt || 0,
+        amount: (q || 1) * (rt || 0)
+      });
+    }
+  });
+  const sub = rows.reduce((s,r)=>s+r.amount,0);
+  const gstR = parseFloat(document.getElementById('b-gst').value)||0;
+  const gstA = sub*gstR/100;
+  billData = {
+    bname, owner:document.getElementById('b-owner').value.trim(),
+    baddr:document.getElementById('b-baddr').value.trim(),
+    bphone:document.getElementById('b-bphone').value.trim(),
+    bemail:document.getElementById('b-bemail').value.trim(),
+    bsite:document.getElementById('b-bsite').value.trim(),
+    gstin:document.getElementById('b-gstin').value.trim(),
+    cname, cphone:document.getElementById('b-cphone').value.trim(),
+    caddr:document.getElementById('b-caddr').value.trim(),
+    date:document.getElementById('b-date').value,
+    pay:document.getElementById('b-pay').value,
+    notes:document.getElementById('b-notes').value.trim(),
+    payDetails:document.getElementById('b-paydetails').value.trim(),
+    terms:document.getElementById('b-terms').value.trim(),
+    rows, sub, gstR, gstA, grand:sub+gstA
+  };
+
+  // Always show generated invoice preview immediately.
+  renderBill(billData);
+  document.getElementById('bs1').className='step done';
+  document.getElementById('bs2').className='step done';
+  document.getElementById('bs3').className='step active';
+  document.getElementById('bill-form').style.display='none';
+  document.getElementById('bill-out').style.display='block';
+  document.getElementById('bill-out').scrollIntoView({behavior:'smooth',block:'start'});
+
+  // Sync invoice data with backend without blocking UI.
+  try {
+    await saveInvoiceToBackend(billData);
+    setBackendStatus('Backend: invoice synced', true);
+    await loadRecentActivity();
+  } catch (_err) {
+    setBackendStatus('Backend: offline (invoice shown, not synced)', false);
+  }
+}
+
+function renderBill(d) {
+  let invNum = document.getElementById('b-custominvnum').value.trim();
+  if (!invNum) invNum = 'INV-'+String(Math.floor(Math.random()*9000)+1000);
+  const normalizedSite = String(d.bsite || '').replace(/^https?:\/\//i, '').trim();
+  const brandSite = normalizedSite || (d.bname
+    ? String(d.bname).toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 24) + '.com'
+    : 'invoice.local');
+  document.getElementById('bo-bname').textContent = d.bname;
+  document.getElementById('bo-binfo').textContent = [d.owner, d.bphone, d.bemail].filter(Boolean).join('  ·  ');
+  document.getElementById('bo-invnum').textContent = '#'+invNum;
+  document.getElementById('bo-date').textContent = d.date ? new Date(d.date).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'}) : '–';
+  document.getElementById('bo-pay').textContent = d.pay;
+  document.getElementById('bo-paydetails').textContent = d.payDetails || d.pay || 'Payment details will appear here.';
+  document.getElementById('bo-cname').textContent = d.cname;
+  document.getElementById('bo-cphone').textContent = d.cphone||'';
+  document.getElementById('bo-caddr').textContent = d.caddr||'';
+  document.getElementById('bo-bname2').textContent = brandSite;
+  document.getElementById('bo-baddr').textContent = d.baddr || '';
+  document.getElementById('bo-gstin').textContent = d.gstin ? 'GSTIN: '+d.gstin : '';
+  document.getElementById('bo-bemail').textContent = d.bemail ? `Email: ${d.bemail}` : '';
+  document.getElementById('bo-bsite').textContent = brandSite ? `Website: ${brandSite}` : '';
+  document.getElementById('bo-subshow').textContent = '₹'+d.sub.toLocaleString('en-IN');
+  document.getElementById('bo-gstlabel').textContent = `Tax ${d.gstR}% :`;
+  document.getElementById('bo-gstshow').textContent = '₹'+d.gstA.toLocaleString('en-IN');
+  document.getElementById('bo-grandshow').textContent = '₹'+d.grand.toLocaleString('en-IN');
+  document.getElementById('bo-signname').textContent = d.owner || d.bname || 'Authorized Signatory';
+  updateLogoTargets(companyLogoDataUrl);
+
+  const tb = document.getElementById('bo-tbody');
+  tb.innerHTML='';
+  if(!d.rows.length) {
+    tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:#666;padding:12px;font-size:12px">No items added</td></tr>';
+  } else {
+    d.rows.forEach((r, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML=`<td>${idx + 1}</td><td>${r.name}</td><td>${r.qty}</td><td>₹${r.rate.toLocaleString('en-IN')}</td><td>₹${r.amount.toLocaleString('en-IN')}</td>`;
+      tb.appendChild(tr);
+    });
+  }
+  applyBillTheme();
+  const termsBox = document.getElementById('bo-terms-box');
+  if (termsBox) {
+    if (d.terms) {
+      termsBox.style.display = 'block';
+      document.getElementById('bo-terms').textContent = d.terms;
+    } else {
+      termsBox.style.display = 'none';
+    }
+  }
+  const nb = document.getElementById('bo-notes-box');
+  if(d.notes){ nb.style.display='block'; document.getElementById('bo-notes').textContent=d.notes; } else nb.style.display='none';
+}
+
+function resetBill(){
+  document.getElementById('bill-out').style.display='none';
+  document.getElementById('bill-form').style.display='block';
+  document.getElementById('bs1').className='step active';
+  document.getElementById('bs2').className='step';
+  document.getElementById('bs3').className='step';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ─── GENERATE REPORT with AI ───
+let reportData = {};
+async function generateReport() {
+  const tech=document.getElementById('r-tech').value.trim();
+  const co=document.getElementById('r-company').value.trim();
+  const cn=document.getElementById('r-cname').value.trim();
+  const dev=document.getElementById('r-device').value;
+  const comp=document.getElementById('r-complaint').value.trim();
+  const work=document.getElementById('r-work').value.trim();
+  const msgEl=document.getElementById('rpt-msg');
+  msgEl.className='msg';
+  if(!tech){msgEl.className='msg err';msgEl.textContent='⚠️ Enter your name.';return;}
+  if(!co){msgEl.className='msg err';msgEl.textContent='⚠️ Enter company name.';return;}
+  if(!cn){msgEl.className='msg err';msgEl.textContent='⚠️ Enter customer name.';return;}
+  if(!dev){msgEl.className='msg err';msgEl.textContent='⚠️ Select device type.';return;}
+  if(!comp){msgEl.className='msg err';msgEl.textContent='⚠️ Describe the complaint.';return;}
+  if(!work){msgEl.className='msg err';msgEl.textContent='⚠️ Describe work done.';return;}
+
+  const reportNumberInput = document.getElementById('r-rptnum');
+  if (reportNumberInput && !reportNumberInput.value.trim()) {
+    reportNumberInput.value = buildReportNumber(co);
+  }
+
+  const btn=document.getElementById('rpt-genbtn');
+  const spin=document.getElementById('rpt-spin');
+  const lbl=document.getElementById('rpt-btnlbl');
+  btn.disabled=true; spin.style.display='block'; lbl.textContent='AI writing your report...';
+
+  const prompt=`You are a professional service report writer for Indian appliance/electrical technicians.
+Respond ONLY in JSON with key: "workPerformed"
+Write a concise work summary in 2-4 sentences, professional yet clear English, specific to the device and issue.
+
+Device: ${dev}${document.getElementById('r-brand').value?' ('+document.getElementById('r-brand').value+')':''}
+Complaint: ${comp}
+Work Done: ${work}
+Status: ${document.getElementById('r-status').value}
+
+JSON only, no markdown:`;
+
+  try {
+    // Check if API key is set
+    if(ANTHROPIC_API_KEY.includes("YOUR_API_KEY")){
+      // Fallback: Generate basic report without AI
+      const ai = {
+        workPerformed: work || "Service work completed as per requirement."
+      };
+      reportData={
+        tech,co,companyAddr:document.getElementById('r-companyaddr').value.trim(),phone:document.getElementById('r-phone').value.trim(),city:document.getElementById('r-city').value.trim(),
+        cn,cphone:document.getElementById('r-cphone').value.trim(),caddr:document.getElementById('r-caddr').value.trim(),
+        dev,brand:document.getElementById('r-brand').value.trim(),
+        complaint:comp,work,date:document.getElementById('r-date').value,
+        status:document.getElementById('r-status').value,...ai
+      };
+      renderReport(reportData);
+      try {
+        await saveReportToBackend(reportData);
+        setBackendStatus('Backend: report synced', true);
+        await loadRecentActivity();
+      } catch (_err) {
+        setBackendStatus('Backend: offline (report saved locally in page)', false);
+      }
+      completeReportSteps();
+      return;
+    }
+    const res = await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"x-api-key":ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01","content-type":"application/json"},
+      body:JSON.stringify({model:"claude-opus-4-1-20250805",max_tokens:1000,messages:[{role:"user",content:prompt}]})
+    });
+    if(!res.ok) throw new Error(`API error: ${res.status}`);
+    const result=await res.json();
+    const raw=result.content.map(c=>c.text||'').join('');
+    const ai=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    reportData={
+      tech,co,companyAddr:document.getElementById('r-companyaddr').value.trim(),phone:document.getElementById('r-phone').value.trim(),city:document.getElementById('r-city').value.trim(),
+      cn,cphone:document.getElementById('r-cphone').value.trim(),caddr:document.getElementById('r-caddr').value.trim(),
+      dev,brand:document.getElementById('r-brand').value.trim(),
+      complaint:comp,work,date:document.getElementById('r-date').value,
+      status:document.getElementById('r-status').value,...ai
+    };
+    renderReport(reportData);
+    try {
+      await saveReportToBackend(reportData);
+      setBackendStatus('Backend: report synced', true);
+      await loadRecentActivity();
+    } catch (_err) {
+      setBackendStatus('Backend: offline (report saved locally in page)', false);
+    }
+    completeReportSteps();
+  } catch(e){
+    msgEl.className='msg err';
+    msgEl.textContent='❌ Failed to generate. Check your API key or connection.';
+    btn.disabled=false; spin.style.display='none'; lbl.textContent='✨ Generate AI Service Report';
+  }
+}
+
+function completeReportSteps(){
+  document.getElementById('rs1').className='step done';
+  document.getElementById('rs2').className='step done';
+  document.getElementById('rs3').className='step done';
+  document.getElementById('rs4').className='step active';
+  document.getElementById('rpt-form').style.display='none';
+  document.getElementById('rpt-out').style.display='block';
+  document.getElementById('rpt-out').scrollIntoView({behavior:'smooth',block:'start'});
+  document.getElementById('rpt-genbtn').disabled=false;
+  document.getElementById('rpt-spin').style.display='none';
+  document.getElementById('rpt-btnlbl').textContent='✨ Generate AI Service Report';
+}
+
+function renderReport(d){
+  let num = document.getElementById('r-rptnum').value.trim();
+  if (!num) num = buildReportNumber(d.co);
+  
+  // Populate new CSR template
+  document.getElementById('csr-title').textContent = 'SERVICE REPORT';
+  document.getElementById('csr-company').textContent = d.co;
+  document.getElementById('csr-rptnum').textContent = num;
+  document.getElementById('csr-date').textContent = d.date ? new Date(d.date).toLocaleDateString('en-IN', {day:'numeric', month:'short', year:'numeric'}) : '–';
+  document.getElementById('csr-companyaddr').textContent = d.companyAddr || '–';
+  document.getElementById('csr-cname').textContent = d.cn;
+  document.getElementById('csr-cphone').textContent = d.cphone || '–';
+  document.getElementById('csr-caddr').textContent = d.caddr || '–';
+  document.getElementById('csr-device').textContent = d.dev;
+  document.getElementById('csr-brand').textContent = d.brand || '–';
+  document.getElementById('csr-status').textContent = d.status;
+  document.getElementById('csr-complaint').textContent = d.complaint || '–';
+  document.getElementById('csr-work').textContent = d.workPerformed || '–';
+  document.getElementById('csr-tech').textContent = d.co;
+  document.getElementById('csr-techname').textContent = d.tech;
+  updateLogoTargets(companyLogoDataUrl);
+  
+  applyReportTheme();
+}
+
+function resetReport(){
+  document.getElementById('rpt-out').style.display='none';
+  document.getElementById('rpt-form').style.display='block';
+  document.getElementById('rs1').className='step active';
+  document.getElementById('rs2').className='step';
+  document.getElementById('rs3').className='step';
+  document.getElementById('rs4').className='step';
+  document.getElementById('rpt-msg').className='msg';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+async function downloadPreviewAsPdf(elementId, fileName, options = {}) {
+  if (!window.jspdf || !window.html2canvas) {
+    alert('PDF tools are not loaded yet. Please refresh and try again.');
+    return;
+  }
+
+  const el = document.getElementById(elementId);
+  if (!el) {
+    alert('Preview not found. Please regenerate and try again.');
+    return;
+  }
+
+  const exportClass = options.exportClass || '';
+  el.classList.add('pdf-export-active');
+  if (exportClass) el.classList.add(exportClass);
+
+  try {
+    await new Promise((resolve) => setTimeout(resolve, options.waitMs ?? 120));
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+    const canvas = await window.html2canvas(el, {
+      scale: options.scale || 2.6,
+      useCORS: true,
+      backgroundColor: options.backgroundColor || '#ffffff'
+    });
+
+    const imageType = (options.imageType || 'PNG').toUpperCase();
+    const imgData = imageType === 'JPEG'
+      ? canvas.toDataURL('image/jpeg', 1.0)
+      : canvas.toDataURL('image/png');
+    const {jsPDF} = window.jspdf;
+    const pdf = new jsPDF({unit:'mm', format:'a4', orientation:'portrait'});
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const margin = options.margin ?? 6;
+    const printW = pageW - margin * 2;
+    const printH = pageH - margin * 2;
+    const imgW = printW;
+    const imgH = (canvas.height * imgW) / canvas.width;
+    const fitScale = Math.min(1, printH / imgH);
+    const finalW = imgW * fitScale;
+    const finalH = imgH * fitScale;
+    const x = (pageW - finalW) / 2;
+    const y = (pageH - finalH) / 2;
+
+    pdf.addImage(imgData, imageType, x, y, finalW, finalH, undefined, 'SLOW');
+    pdf.save(fileName);
+  } finally {
+    el.classList.remove('pdf-export-active');
+    if (exportClass) el.classList.remove(exportClass);
+  }
+}
+
+// ─── PDF: REPORT ───
+async function downloadReportPDF(){
+  if (!reportData || !reportData.co) {
+    alert('Please generate a service report first.');
+    return;
+  }
+
+  try {
+    const customer = (reportData.cn || 'Customer').replace(/\s+/g, '_');
+    const date = reportData.date || 'today';
+    await downloadPreviewAsPdf('rpt-preview', `ServiceReport_${customer}_${date}.pdf`, {
+      exportClass: 'pdf-export-compact',
+      scale: 1.7,
+      margin: 5,
+    });
+  } catch (_err) {
+    alert('Unable to download report PDF right now. Please try again.');
+  }
+}
+
+// ─── PDF: BILL ───
+async function downloadBillPDF(){
+  if (!billData || !billData.bname) {
+    alert('Please generate an invoice first.');
+    return;
+  }
+
+  try {
+    const customer = (billData.cname || 'Customer').replace(/\s+/g, '_');
+    const date = billData.date || 'today';
+    await downloadPreviewAsPdf('bill-preview', `Invoice_${customer}_${date}.pdf`, {
+      exportClass: 'pdf-export-compact-invoice',
+      scale: 2.2,
+      margin: 4,
+      backgroundColor: '#ffffff',
+      imageType: 'JPEG',
+      waitMs: 200,
+    });
+  } catch (_err) {
+    alert('Unable to download invoice PDF right now. Please try again.');
+  }
+}
+
+// ─── WHATSAPP ───
+function shareReportWA(){
+  const d = reportData;
+  if (!d || !d.co) {
+    alert('Please generate a service report first.');
+    return;
+  }
+  const msg = `*Service Report – ${d.co}*\n\n👤 Customer: ${d.cn || '-'}\n🔧 Device: ${d.dev || '-'}${d.brand ? ' (' + d.brand + ')' : ''}\n📅 Date: ${d.date ? new Date(d.date).toLocaleDateString('en-IN') : '-'}\n✅ Status: ${d.status || '-'}\n\n📝 Complaint:\n${d.complaint || '-'}\n\n🛠️ Work Performed:\n${d.workPerformed || d.work || '-'}\n\n_Generated via Insight Reports Co._`;
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+}
+function shareBillWA(){
+  const d = billData;
+  if (!d || !d.bname) {
+    alert('Please generate an invoice first.');
+    return;
+  }
+
+  const invNum = document.getElementById('bo-invnum')?.textContent || '#INV';
+  const itemLines = (d.rows || [])
+    .slice(0, 15)
+    .map((r, idx) => `${idx + 1}. ${r.name} x${r.qty} @ ₹${Number(r.rate || 0).toLocaleString('en-IN')} = ₹${Number(r.amount || 0).toLocaleString('en-IN')}`)
+    .join('\n');
+
+  const msg = `*Invoice – ${d.bname}*\n\n📄 ${invNum}\n👤 Customer: ${d.cname || '-'}\n📅 Date: ${d.date ? new Date(d.date).toLocaleDateString('en-IN') : '-'}\n\n*Items:*\n${itemLines || 'No items added'}\n\nSub Total: ₹${Number(d.sub || 0).toLocaleString('en-IN')}\nTax (${Number(d.gstR || 0)}%): ₹${Number(d.gstA || 0).toLocaleString('en-IN')}\n*Grand Total: ₹${Number(d.grand || 0).toLocaleString('en-IN')}*\n\n💳 Payment: ${d.pay || '-'}\n🏦 Details: ${d.payDetails || '-'}\n🌐 Website: ${d.bsite || '-'}\n📧 Email: ${d.bemail || '-'}\n📌 Terms: ${d.terms || '-'}\n\n_Generated via Insight Reports Co._`;
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+}
