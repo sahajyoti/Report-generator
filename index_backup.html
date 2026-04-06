@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FieldPro Reports – Service & Billing</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="styles.css?v=20260406f" />
+<link rel="stylesheet" href="ui-fix.css?v=20260406g" />
+<script src="app.js?v=20260406f" defer></script>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="brand-block">
+      <div class="brand-mark">FP</div>
+      <div class="brand-text">
+        <div class="logo">FieldPro Reports</div>
+        <p class="brand-tagline">Service reports and invoices in one place</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="top-nav-btn" onclick="switchTab('report')">Service Report</button>
+      <button type="button" class="top-nav-btn" onclick="switchTab('bill')">Billing</button>
+      <div class="ai-pill">Smart Reports</div>
+      <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav()" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- PAGE TABS -->
+<div class="page-tabs">
+  <div class="page-tab active" onclick="switchTab('report')" id="tab-report">
+    <span class="tab-icon">📋</span> Service Report
+  </div>
+  <div class="page-tab" onclick="switchTab('bill')" id="tab-bill">
+    <span class="tab-icon">💰</span> Billing
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PAGE 1 — SERVICE REPORT
+═══════════════════════════════════════════ -->
+<div class="page-panel active" id="panel-report">
+<div class="container">
+
+  <div class="steps" id="rpt-steps">
+    <div class="step active" id="rs1"><div class="step-num">1</div><div>Details</div></div>
+    <div class="step" id="rs2"><div class="step-num">2</div><div>Service Info</div></div>
+    <div class="step" id="rs3"><div class="step-num">3</div><div>AI Report</div></div>
+    <div class="step" id="rs4"><div class="step-num">4</div><div>Download</div></div>
+  </div>
+
+  <!-- FORM -->
+  <div id="rpt-form">
+
+    <div class="card">
+      <div class="card-title"><div class="ico">🔧</div>Technician & Company</div>
+      <div class="row">
+        <div class="field"><label>Your Name <span class="req">*</span></label><input id="r-tech" placeholder="e.g. Ramesh Sharma"/></div>
+        <div class="field"><label>Company / Shop <span class="req">*</span></label><input id="r-company" placeholder="e.g. Sharma AC Services"/></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Phone</label><input id="r-phone" type="tel" placeholder="9876543210"/></div>
+        <div class="field"><label>City</label><input id="r-city" placeholder="e.g. Delhi"/></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><div class="ico">👤</div>Customer Details</div>
+      <div class="row">
+        <div class="field"><label>Name <span class="req">*</span></label><input id="r-cname" placeholder="e.g. Suresh Gupta"/></div>
+        <div class="field"><label>Phone</label><input id="r-cphone" type="tel" placeholder="9876543210"/></div>
+      </div>
+      <div class="row one">
+        <div class="field"><label>Address</label><input id="r-caddr" placeholder="Flat 302, Sector 14, Gurgaon"/></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><div class="ico">📺</div>Device & Complaint</div>
+      <div class="row">
+        <div class="field"><label>Device Type <span class="req">*</span></label>
+          <select id="r-device">
+            <option value="">Select device...</option>
+            <option>Split AC</option><option>Window AC</option>
+            <option>Refrigerator</option><option>Washing Machine</option>
+            <option>Microwave</option><option>Geyser / Water Heater</option>
+            <option>Television</option><option>Ceiling Fan</option>
+            <option>Inverter / UPS</option><option>Water Purifier</option>
+            <option>Electrical Wiring</option><option>Plumbing</option><option>Other</option>
+          </select>
+        </div>
+        <div class="field"><label>Brand / Model</label><input id="r-brand" placeholder="e.g. Daikin 1.5 Ton"/></div>
+      </div>
+      <div class="row one">
+        <div class="field"><label>Customer's Complaint <span class="req">*</span></label>
+          <textarea id="r-complaint" placeholder="e.g. AC not cooling, making noise, water leaking..."></textarea></div>
+      </div>
+      <div class="row one">
+        <div class="field"><label>Work Done / Diagnosis <span class="req">*</span></label>
+          <textarea id="r-work" placeholder="e.g. Checked gas pressure, refilled R-22, cleaned filters, replaced capacitor..."></textarea></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Service Date</label><input type="date" id="r-date"/></div>
+        <div class="field"><label>Job Status</label>
+          <select id="r-status">
+            <option>Completed</option>
+            <option>Partial – Follow-up Needed</option>
+            <option>Pending – Part Ordered</option>
+            <option>Under Warranty</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div id="rpt-msg" class="msg"></div>
+
+    <button class="btn-primary" id="rpt-genbtn" onclick="generateReport()">
+      <div class="spinner" id="rpt-spin"></div>
+      <span id="rpt-btnlbl">✨ Generate AI Service Report</span>
+    </button>
+  </div><!-- /rpt-form -->
+
+  <!-- OUTPUT -->
+  <div id="rpt-out">
+    <div style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#5C2D91,#1A4FA0);color:white;font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;margin-bottom:12px;">✨ AI Generated</div>
+
+    <div class="preview-wrap">
+      <div class="prev-head">
+        <div>
+          <div class="prev-company" id="o-company">–</div>
+          <div class="prev-sub" id="o-techinfo">–</div>
+        </div>
+        <div class="prev-badge">
+          <div class="lbl">Report No.</div>
+          <div class="num" id="o-rptnum">#SR-0001</div>
+        </div>
+      </div>
+      <div class="date-bar">
+        <span id="o-date">–</span>
+        <span class="status-badge" id="o-status">–</span>
+      </div>
+      <div class="prev-body">
+        <div class="info-grid">
+          <div class="info-block">
+            <div class="blk-title">Customer</div>
+            <div class="info-row"><strong id="o-cname">–</strong></div>
+            <div class="info-row" id="o-cphone">–</div>
+            <div class="info-row" id="o-caddr">–</div>
+          </div>
+          <div class="info-block">
+            <div class="blk-title">Device</div>
+            <div class="info-row"><strong id="o-device">–</strong></div>
+            <div class="info-row" id="o-brand">–</div>
+          </div>
+        </div>
+        <div class="ai-box"><div class="ai-lbl">🔍 Problem Diagnosis</div><p id="o-diag">–</p></div>
+        <div class="ai-box"><div class="ai-lbl">🔧 Work Performed</div><p id="o-work">–</p></div>
+        <div class="ai-box"><div class="ai-lbl">💡 Recommendations</div><p id="o-reco">–</p></div>
+        <div class="ai-box"><div class="ai-lbl">🛡️ Warranty & Terms</div><p id="o-warr">–</p></div>
+        <div class="sig-row">
+          <div class="sig-box">Technician Signature<br/><br/></div>
+          <div class="sig-box">Customer Signature<br/><br/></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-action btn-dark" onclick="downloadReportPDF()">📄 Download PDF</button>
+      <button class="btn-action btn-wa" onclick="shareReportWA()">💬 WhatsApp</button>
+      <button class="btn-action btn-outline" onclick="resetReport()">🔄 New Report</button>
+    </div>
+  </div><!-- /rpt-out -->
+
+</div>
+</div><!-- /panel-report -->
+
+
+<!-- ══════════════════════════════════════════
+     PAGE 2 — BILLING
+═══════════════════════════════════════════ -->
+<div class="page-panel" id="panel-bill">
+<div class="container">
+
+  <div class="steps" id="bill-steps">
+    <div class="step active" id="bs1"><div class="step-num">1</div><div>Details</div></div>
+    <div class="step" id="bs2"><div class="step-num">2</div><div>Items</div></div>
+    <div class="step" id="bs3"><div class="step-num">3</div><div>Invoice</div></div>
+  </div>
+
+  <!-- BILL FORM -->
+  <div id="bill-form">
+
+    <div class="card">
+      <div class="card-title blue"><div class="ico">🏬</div>Business Info</div>
+      <div class="row">
+        <div class="field"><label>Business Name <span class="req">*</span></label><input id="b-bname" placeholder="e.g. Sharma AC Services"/></div>
+        <div class="field"><label>Owner / Tech Name</label><input id="b-owner" placeholder="Ramesh Sharma"/></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Phone</label><input id="b-bphone" type="tel" placeholder="9876543210"/></div>
+        <div class="field"><label>GSTIN (optional)</label><input id="b-gstin" placeholder="e.g. 07AABCU9603R1ZX"/></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title blue"><div class="ico">👤</div>Bill To (Customer)</div>
+      <div class="row">
+        <div class="field"><label>Customer Name <span class="req">*</span></label><input id="b-cname" placeholder="Suresh Gupta"/></div>
+        <div class="field"><label>Phone</label><input id="b-cphone" type="tel" placeholder="9876543210"/></div>
+      </div>
+      <div class="row one">
+        <div class="field"><label>Address</label><input id="b-caddr" placeholder="Flat 302, Sector 14, Gurgaon"/></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Bill Date</label><input type="date" id="b-date"/></div>
+        <div class="field"><label>Due / Payment</label>
+          <select id="b-pay">
+            <option>Paid – Cash</option>
+            <option>Paid – UPI</option>
+            <option>Paid – Card</option>
+            <option>Pending Payment</option>
+            <option>Partial Payment</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title blue"><div class="ico">📦</div>Items & Charges</div>
+
+      <table class="parts-tbl">
+        <thead>
+          <tr>
+            <th style="width:42%">Item / Service</th>
+            <th style="width:13%">Qty</th>
+            <th style="width:20%">Rate (₹)</th>
+            <th style="width:18%">Amount</th>
+            <th style="width:7%"></th>
+          </tr>
+        </thead>
+        <tbody id="bill-body">
+          <tr>
+            <td><input type="text" placeholder="Labour charges"/></td>
+            <td><input type="number" value="1" min="1" oninput="calcBill()"/></td>
+            <td><input type="number" placeholder="0" oninput="calcBill()"/></td>
+            <td class="bill-amt" style="font-weight:600">₹0</td>
+            <td><button class="del-btn" onclick="delBillRow(this)">✕</button></td>
+          </tr>
+        </tbody>
+      </table>
+      <button class="add-btn" onclick="addBillRow()">+ Add Item / Part</button>
+
+      <div class="totals-box">
+        <div class="tot-row"><span>Subtotal</span><span id="b-sub">₹0</span></div>
+        <div class="tot-row" style="align-items:center;gap:8px;flex-wrap:wrap;">
+          <span>GST</span>
+          <span style="display:flex;align-items:center;gap:6px;">
+            <select id="b-gst" onchange="calcBill()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:3px 8px;border-radius:6px;font-size:12px;outline:none;">
+              <option value="0">No GST</option>
+              <option value="5">5%</option>
+              <option value="12">12%</option>
+              <option value="18" selected>18%</option>
+              <option value="28">28%</option>
+            </select>
+            <span id="b-gstamt">₹0</span>
+          </span>
+        </div>
+        <div class="tot-row grand"><span>Total</span><span class="amt" id="b-grand">₹0</span></div>
+      </div>
+
+      <div class="row one" style="margin-top:14px;">
+        <div class="field"><label>Notes (optional)</label><textarea id="b-notes" placeholder="e.g. 3-month warranty on parts, next service due in June..." style="min-height:60px;"></textarea></div>
+      </div>
+    </div>
+
+    <div id="bill-msg" class="msg"></div>
+
+    <button class="btn-primary blue-btn" onclick="generateBill()">
+      📄 Generate Invoice
+    </button>
+  </div><!-- /bill-form -->
+
+  <!-- BILL OUTPUT -->
+  <div id="bill-out">
+
+    <div class="preview-wrap">
+      <div class="prev-head bill-prev-head">
+        <div>
+          <div class="prev-company" id="bo-bname">–</div>
+          <div class="prev-sub" id="bo-binfo">–</div>
+        </div>
+        <div class="prev-badge">
+          <div class="lbl">Invoice</div>
+          <div class="num" id="bo-invnum">#INV-0001</div>
+        </div>
+      </div>
+      <div class="date-bar">
+        <span id="bo-date">–</span>
+        <span class="status-badge" id="bo-pay" style="color:#1A4FA0">–</span>
+      </div>
+
+      <div class="prev-body">
+        <div class="info-grid" style="margin-bottom:16px;">
+          <div class="info-block">
+            <div class="blk-title">Bill To</div>
+            <div class="info-row"><strong id="bo-cname">–</strong></div>
+            <div class="info-row" id="bo-cphone">–</div>
+            <div class="info-row" id="bo-caddr">–</div>
+          </div>
+          <div class="info-block">
+            <div class="blk-title">Business</div>
+            <div class="info-row"><strong id="bo-bname2">–</strong></div>
+            <div class="info-row" id="bo-gstin">–</div>
+          </div>
+        </div>
+
+        <table class="bill-table">
+          <thead>
+            <tr>
+              <th>Item / Service</th><th>Qty</th><th>Rate</th><th>Amount</th>
+            </tr>
+          </thead>
+          <tbody id="bo-tbody"></tbody>
+          <tfoot>
+            <tr class="total-row">
+              <td colspan="3">Grand Total</td>
+              <td id="bo-total">₹0</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <div id="bo-notes-box" style="margin-top:14px;background:#E0EAFF;border:1px solid #B0C8FF;border-radius:9px;padding:10px 14px;font-size:12px;color:#1A4FA0;display:none;">
+          <strong style="font-size:10px;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:4px;">Notes</strong>
+          <span id="bo-notes">–</span>
+        </div>
+
+        <div class="sig-row" style="margin-top:18px;">
+          <div class="sig-box">Authorized Signature<br/><br/></div>
+          <div class="sig-box">Customer Signature<br/><br/></div>
+        </div>
+      </div>
+
+      <div class="payment-strip">
+        <div>
+          <div class="lbl">Amount Due</div>
+          <div class="total-amt" id="bo-grandshow">₹0</div>
+        </div>
+        <div style="font-size:22px;">💰</div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-action btn-dark" onclick="downloadBillPDF()">📄 Download PDF</button>
+      <button class="btn-action btn-wa" onclick="shareBillWA()">💬 WhatsApp</button>
+      <button class="btn-action btn-blue-outline" onclick="resetBill()">🔄 New Bill</button>
+    </div>
+  </div><!-- /bill-out -->
+
+</div>
+</div><!-- /panel-bill -->
+
+<footer class="site-footer">
+  <div class="footer-shell">
+    <div class="footer-top">
+      <div class="footer-brand-col">
+        <div class="footer-brand" id="footer-company">FieldPro Reports</div>
+        <div class="footer-address">Kolkata, West Bengal</div>
+      </div>
+
+      <div class="footer-link-col">
+        <h4>Navigation</h4>
+        <div class="footer-links">
+          <button type="button" onclick="switchTab('report')">Service Report</button>
+          <button type="button" onclick="switchTab('bill')">Billing</button>
+        </div>
+      </div>
+
+      <div class="footer-link-col">
+        <h4>Made By</h4>
+        <p><a href="https://dsbiomedicalservices.debojyoti.online/" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;">DS BIOMEDICAL &amp; IT SERVICES</a></p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<nav class="mobile-bottom-nav" aria-label="Mobile Navigation">
+  <button class="mobile-nav-btn active" id="mtab-report" onclick="switchTab('report')">📋 Report</button>
+  <button class="mobile-nav-btn" id="mtab-bill" onclick="switchTab('bill')">💰 Billing</button>
+</nav>
+
+</body>
+</html>
