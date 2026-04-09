@@ -7,16 +7,29 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="styles.css?v=20260406f" />
-<link rel="stylesheet" href="ui-fix.css?v=20260406g" />
-<script src="app.js?v=20260406f" defer></script>
+<link rel="icon" type="image/png" href="logo%20insight.png" />
+<link rel="stylesheet" href="styles.css?v=20260407g" />
+<link rel="stylesheet" href="ui-fix.css?v=20260407g" />
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script type="module" src="firebase-init.js"></script>
+<script src="app.js?v=20260407g" defer></script>
 </head>
 <body>
+
+<!-- Netflix-Style Report Animation Overlay -->
+<div class="netflix-animation-overlay" id="netflix-animation">
+  <div class="netflix-logo-container">
+    <img src="logo insight.png" alt="Insight Reports" class="netflix-logo-img"/>
+  </div>
+  <div class="netflix-logo-text">INSIGHT REPORTS</div>
+</div>
 
 <header class="header">
   <div class="header-inner">
     <div class="brand-block">
-      <div class="brand-mark">IR</div>
+      <div class="brand-mark">
+        <img id="navbar-logo" src="logo insight.png" alt="Insight Reports logo"/>
+      </div>
       <div class="brand-text">
         <div class="logo">Insight Reports Co.</div>
         <p class="brand-tagline">Service reports, invoices, and follow-up in one place</p>
@@ -29,6 +42,7 @@
       <button type="button" class="top-nav-btn" onclick="switchTab('quotation')">Quotation</button>
       <button type="button" class="top-nav-btn" onclick="switchTab('contact')">Testimonials</button>
       <button type="button" class="top-nav-btn" onclick="switchTab('contact')">Gallery</button>
+      <button type="button" class="top-nav-btn account-btn" id="account-btn" onclick="openAccountPortal()">Login</button>
       <div class="ai-pill">Smart Reports</div>
       <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav()" aria-label="Toggle navigation">
         <span></span><span></span><span></span>
@@ -50,6 +64,9 @@
   </div>
   <div class="page-tab" onclick="switchTab('quotation')" id="tab-quotation">
     <span class="tab-icon">🧾</span> Quotation
+  </div>
+  <div class="page-tab" onclick="switchTab('account')" id="tab-account">
+    <span class="tab-icon">👤</span> My Account
   </div>
 </div>
 
@@ -378,7 +395,7 @@
         <div class="tot-row" style="align-items:center;gap:8px;flex-wrap:wrap;">
           <span>GST</span>
           <span style="display:flex;align-items:center;gap:6px;">
-            <select id="b-gst" onchange="calcBill()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:3px 8px;border-radius:6px;font-size:12px;outline:none;">
+            <select id="b-gst" onchange="calcBill()" style="background:#ffffff;border:1px solid #cbd5e1;color:#111827;padding:3px 8px;border-radius:6px;font-size:12px;outline:none;">
               <option value="0">No GST</option>
               <option value="5">5%</option>
               <option value="12">12%</option>
@@ -516,16 +533,165 @@
     <p>Prepare polished quotations for customers with the same premium look as your reports and invoices.</p>
   </section>
 
-  <div class="card quotation-coming-card">
-    <div class="card-title blue"><div class="ico">🚧</div>Feature Status</div>
-    <div class="quotation-coming-body">
-      <h3>Coming Soon</h3>
-      <p>Quotation module is currently building in progress.</p>
-      <p>We are adding quotation templates, line-item estimation, discount options, and PDF/WhatsApp sharing next.</p>
-      <div class="btn-row">
-        <button class="btn-action btn-dark" onclick="switchTab('bill')">💰 Use Billing For Now</button>
-        <button class="btn-action btn-wa" onclick="switchTab('report')">📋 Open Service Report</button>
+  <div id="quote-form">
+    <div class="card">
+      <div class="card-title blue"><div class="ico">🏢</div>Company & Quotation Info</div>
+      <div class="row">
+        <div class="field"><label>Company Name <span class="req">*</span></label><input id="q-company" placeholder="Insight Reports Co." required/></div>
+        <div class="field"><label>Quotation Number <span class="req">*</span></label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input id="q-number" placeholder="QT-2026-001" required style="flex:1;"/>
+            <button type="button" class="auto-gen-btn" onclick="autoGenQuoteNum()" title="Auto-generate">🔄</button>
+          </div>
+        </div>
       </div>
+      <div class="row">
+        <div class="field"><label>Valid From</label><input id="q-valid-from" type="date"/></div>
+        <div class="field"><label>Valid Till</label><input id="q-valid-till" type="date"/></div>
+      </div>
+      <div class="row one">
+        <div class="field"><label>Template Style</label>
+          <select id="q-template">
+            <option value="simple" selected>Simple</option>
+            <option value="apple">Apple Red</option>
+            <option value="banana">Banana Yellow</option>
+            <option value="blueberry">Blueberry</option>
+          </select>
+        </div>
+      </div>
+      <div class="row one">
+        <div class="field"><label>Company Address</label><input id="q-company-address" placeholder="Kolkata, West Bengal"/></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Phone</label><input id="q-company-phone" placeholder="9876543210"/></div>
+        <div class="field"><label>Email</label><input id="q-company-email" type="email" placeholder="support@insightreports.com"/></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title blue"><div class="ico">👤</div>Customer</div>
+      <div class="row">
+        <div class="field"><label>Customer Name <span class="req">*</span></label><input id="q-customer-name" placeholder="Customer Name" required/></div>
+        <div class="field"><label>Customer Contact</label><input id="q-customer-contact" placeholder="Phone / Email"/></div>
+      </div>
+      <div class="row one">
+        <div class="field"><label>Customer Address</label><input id="q-customer-address" placeholder="Street, City, State, ZIP"/></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title blue"><div class="ico">📦</div>Quoted Items</div>
+      <table class="parts-tbl">
+        <thead>
+          <tr>
+            <th style="width:30%">Item</th>
+            <th style="width:28%">Description</th>
+            <th style="width:10%">Qty</th>
+            <th style="width:15%">Unit Price</th>
+            <th style="width:13%">Amount</th>
+            <th style="width:4%"></th>
+          </tr>
+        </thead>
+        <tbody id="quote-body">
+          <tr>
+            <td><input type="text" placeholder="Service / Product"/></td>
+            <td><input type="text" placeholder="Short description"/></td>
+            <td><input type="number" min="1" value="1" oninput="calcQuote()"/></td>
+            <td><input type="number" min="0" value="0" oninput="calcQuote()"/></td>
+            <td class="quote-amt" style="font-weight:600">₹0</td>
+            <td><button class="del-btn" onclick="delQuoteRow(this)">✕</button></td>
+          </tr>
+        </tbody>
+      </table>
+      <button class="add-btn" onclick="addQuoteRow()">+ Add Item</button>
+
+      <div class="totals-box">
+        <div class="tot-row"><span>Sub Total</span><span id="q-sub">₹0</span></div>
+        <div class="tot-row" style="align-items:center;gap:8px;flex-wrap:wrap;">
+          <span>Tax</span>
+          <span style="display:flex;align-items:center;gap:6px;">
+            <select id="q-tax" onchange="calcQuote()" style="background:#ffffff;border:1px solid #cbd5e1;color:#111827;padding:3px 8px;border-radius:6px;font-size:12px;outline:none;">
+              <option value="0">0%</option>
+              <option value="5">5%</option>
+              <option value="12">12%</option>
+              <option value="18">18%</option>
+            </select>
+            <span id="q-tax-amt">₹0</span>
+          </span>
+        </div>
+        <div class="tot-row grand"><span>Grand Total</span><span class="amt" id="q-grand">₹0</span></div>
+      </div>
+
+      <div class="row one" style="margin-top:14px;">
+        <div class="field"><label>Notes</label><textarea id="q-notes" placeholder="This quotation is non-contractual and valid until the date mentioned above." style="min-height:72px;"></textarea></div>
+      </div>
+    </div>
+
+    <div id="quote-msg" class="msg"></div>
+
+    <button class="btn-primary blue-btn" onclick="generateQuote()">🧾 Generate Quotation</button>
+  </div>
+
+  <div id="quote-out" style="display:none;">
+    <div id="quote-preview" class="quote-template">
+      <div class="quote-company-row">
+        <img id="quote-logo" class="brand-logo bill-logo" alt="Company logo" hidden/>
+        <div class="quote-company-meta">
+          <div class="quote-company-name" id="qp-company">Insight Reports Co.</div>
+          <div class="quote-company-line" id="qp-company-address">Kolkata, West Bengal</div>
+          <div class="quote-company-line" id="qp-company-contact">Phone | Email</div>
+        </div>
+      </div>
+
+      <div class="quote-bigi">QUOTATION</div>
+
+      <div class="quote-info-grid">
+        <div class="quote-customer">
+          <strong>CUSTOMER</strong><br>
+          <span id="qp-customer-name">Customer Name</span><br>
+          <span id="qp-customer-address">Address</span><br>
+          <span id="qp-customer-contact">Contact</span>
+        </div>
+        <div class="quote-meta right">
+          <strong>Quotation #:</strong> <span id="qp-number">QT-0001</span><br>
+          <strong>Valid From:</strong> <span id="qp-valid-from">-</span><br>
+          <strong>Valid Till:</strong> <span id="qp-valid-till">-</span>
+        </div>
+      </div>
+
+      <table class="quote-items-table">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Quantity</th>
+            <th>Unit Price</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody id="qp-items"></tbody>
+        <tbody>
+          <tr class="ttl"><td class="right" colspan="3">SUB-TOTAL</td><td id="qp-sub">₹0</td></tr>
+          <tr class="ttl"><td class="right" colspan="3" id="qp-tax-label">TAX 0%</td><td id="qp-tax">₹0</td></tr>
+          <tr class="ttl"><td class="right" colspan="3">GRAND TOTAL</td><td id="qp-grand">₹0</td></tr>
+        </tbody>
+      </table>
+
+      <div class="quote-notes" id="qp-notes-box" style="display:none;">
+        <span id="qp-notes"></span>
+      </div>
+
+      <div class="quote-accept">
+        Customer Acceptance
+        <table>
+          <tr><td>Signature</td><td>Name</td><td>Date</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-action btn-dark" onclick="downloadQuotePDF()">📄 Download PDF</button>
+      <button class="btn-action btn-wa" onclick="shareQuoteWA()">💬 WhatsApp</button>
+      <button class="btn-action btn-blue-outline" onclick="resetQuote()">🔄 New Quote</button>
     </div>
   </div>
 </div>
@@ -590,11 +756,65 @@
 </div>
 </div><!-- /panel-contact -->
 
+<!-- ══════════════════════════════════════════
+     PAGE 5 — MY ACCOUNT
+═══════════════════════════════════════════ -->
+<div class="page-panel" id="panel-account">
+<div class="container">
+  <section class="panel-intro">
+    <h2>My Account</h2>
+    <p>View your profile, change password, and manage previously generated reports and invoices.</p>
+  </section>
+
+  <div class="card">
+    <div class="card-title"><div class="ico">👤</div>Profile</div>
+    <div class="account-profile-grid">
+      <div class="contact-box">
+        <div class="contact-label">Name</div>
+        <div class="contact-value" id="account-name">Guest User</div>
+      </div>
+      <div class="contact-box">
+        <div class="contact-label">Email</div>
+        <div class="contact-value" id="account-email">Login required</div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-action btn-dark" type="button" onclick="changePasswordFromAccount()">🔐 Change Password</button>
+      <button class="btn-action btn-outline" type="button" onclick="openAuthModal()">🔑 Login / Switch Account</button>
+    </div>
+  </div>
+
+  <div class="recent-services-grid">
+    <div class="recent-services-panel">
+      <div class="recent-panel-head">
+        <div>
+          <p class="recent-kicker">Account History</p>
+          <h3>Saved Service Reports</h3>
+        </div>
+        <span class="recent-chip">Editable</span>
+      </div>
+      <div id="account-reports-list" class="account-history-list"></div>
+    </div>
+
+    <div class="recent-services-panel">
+      <div class="recent-panel-head">
+        <div>
+          <p class="recent-kicker">Account History</p>
+          <h3>Saved Invoices</h3>
+        </div>
+        <span class="recent-chip accent">Re-download</span>
+      </div>
+      <div id="account-invoices-list" class="account-history-list"></div>
+    </div>
+  </div>
+</div>
+</div><!-- /panel-account -->
+
 <footer class="site-footer">
   <div class="footer-shell">
     <div class="footer-top">
       <div class="footer-brand-col">
-        <img id="footer-logo" class="brand-logo footer-logo" alt="Company logo" hidden/>
+        <img id="footer-logo" class="brand-logo footer-logo" src="logo insight.png" alt="Company logo"/>
         <div class="footer-brand" id="footer-company">Insight Reports Co.</div>
         <div class="footer-address" id="footer-address">Kolkata, West Bengal</div>
       </div>
@@ -627,7 +847,79 @@
   <button class="mobile-nav-btn" id="mtab-bill" onclick="switchTab('bill')">💰 Billing</button>
   <button class="mobile-nav-btn" id="mtab-quotation" onclick="switchTab('quotation')">🧾 Quote</button>
   <button class="mobile-nav-btn" id="mtab-contact" onclick="switchTab('contact')">📞 Contact</button>
+  <button class="mobile-nav-btn" id="mtab-account" onclick="switchTab('account')">👤 Account</button>
 </nav>
+
+<div id="auth-modal" class="auth-modal" hidden>
+  <div class="auth-modal-card" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+    <div class="auth-head">
+      <div class="auth-brand"><span>Welcome to</span>Insight Reports Co.</div>
+      <button type="button" class="auth-close" onclick="closeAuthModal()" aria-label="Close">✕</button>
+    </div>
+
+    <p class="auth-welcome-note">Build polished service reports and invoices in minutes.</p>
+
+    <h3 id="auth-title" class="auth-title">Login</h3>
+
+    <div class="auth-switch" role="tablist" aria-label="Authentication mode">
+      <button type="button" class="auth-switch-btn active" id="auth-login-tab" onclick="setAuthMode('login')">Log In</button>
+      <button type="button" class="auth-switch-btn" id="auth-signup-tab" onclick="setAuthMode('signup')">Sign Up</button>
+    </div>
+
+    <p id="auth-user-state" class="auth-user-state">Login to sync and view your previous reports and bills.</p>
+
+    <form id="auth-form" class="auth-form">
+      <div class="field">
+        <label for="auth-email">Email</label>
+        <input id="auth-email" type="email" required placeholder="you@example.com" />
+      </div>
+      <div class="field">
+        <label for="auth-password">Password</label>
+        <input id="auth-password" type="password" required minlength="6" placeholder="Minimum 6 characters" />
+      </div>
+      <button type="button" class="auth-link-btn" onclick="forgotPassword()">Forgot Password?</button>
+      <p id="auth-msg" class="auth-msg"></p>
+      <div class="auth-actions">
+        <button type="submit" class="btn-action btn-dark auth-submit" id="auth-submit-btn">Log In</button>
+        <button type="button" class="btn-action" id="auth-logout-btn" onclick="logoutAccount()" style="display:none;">Logout</button>
+      </div>
+
+      <p class="auth-divider">or continue with</p>
+      <div class="auth-socials">
+        <div id="google-login-container" class="google-login-container"></div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="reset-password-modal" class="auth-modal" hidden>
+  <div class="auth-modal-card reset-modal-card" role="dialog" aria-modal="true" aria-labelledby="reset-title">
+    <div class="auth-head">
+      <div class="auth-brand">Reset Password</div>
+      <button type="button" class="auth-close" onclick="closeResetPasswordModalWithReturn(true)" aria-label="Close">✕</button>
+    </div>
+
+    <p class="auth-user-state">Enter your new password.</p>
+
+    <form id="reset-password-form" class="auth-form">
+      <div class="field">
+        <label for="reset-new-password">New Password</label>
+        <input id="reset-new-password" type="password" required minlength="6" placeholder="Minimum 6 characters" />
+      </div>
+      <div class="field">
+        <label for="reset-confirm-password">Confirm New Password</label>
+        <input id="reset-confirm-password" type="password" required minlength="6" placeholder="Re-enter new password" />
+      </div>
+
+      <p id="reset-msg" class="auth-msg"></p>
+
+      <div class="auth-actions">
+        <button type="submit" class="btn-action btn-dark auth-submit">Update Password</button>
+        <button type="button" class="btn-action" onclick="closeResetPasswordModalWithReturn(true)">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 </body>
 </html>
