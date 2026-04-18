@@ -2321,11 +2321,23 @@ body {
 
 /* Quotation template adapted from quotr (code-boxx/quotr), styled for this app */
 .quote-template {
+  position:relative;
   background:#ffffff;
   border:1px solid var(--border);
   border-radius:16px;
   padding:18px;
   box-shadow:var(--shadow-sm);
+}
+
+.quote-top-right {
+  display:block;
+  text-align:right;
+  margin-bottom:10px;
+  padding:6px 0;
+  color:#555;
+  font-size:12px;
+  font-weight:600;
+  letter-spacing:0.3px;
 }
 
 .quote-company-row {
@@ -2421,6 +2433,31 @@ body {
   border-radius:10px;
   font-size:12px;
   color:#354a63;
+}
+
+.quote-notes strong {
+  display:block;
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:0.04em;
+  color:#1f3a5a;
+  margin-bottom:4px;
+}
+
+.quote-notes span {
+  white-space:pre-wrap;
+  word-break:break-word;
+}
+
+.quote-extra-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:14px;
+}
+
+.quote-extra-grid.single-column {
+  grid-template-columns:1fr;
 }
 
 .quote-accept {
@@ -2635,6 +2672,88 @@ body {
   border:1px solid #ffffff;
 }
 
+.pdf-export-compact-quote.quote-template {
+  width:min(750px, 100%);
+  margin:0 auto;
+  padding:16px;
+  border-radius:0;
+  box-shadow:none;
+  border:1px solid #d1d5db;
+  background:#ffffff;
+  font-size:12px;
+  page-break-inside:avoid;
+}
+
+.pdf-export-compact-quote .quote-top-right {
+  position:static;
+  margin-bottom:12px;
+  text-align:right;
+  max-width:100%;
+  padding:0;
+  border:none;
+  background:none;
+  color:#555;
+  font-size:11px;
+  font-weight:600;
+  display:block !important;
+}
+
+.pdf-export-compact-quote .quote-company-name {
+  font-size:20px;
+}
+
+.pdf-export-compact-quote .quote-company-line {
+  font-size:11px;
+  line-height:1.35;
+}
+
+.pdf-export-compact-quote .quote-bigi {
+  margin:8px 0 12px;
+  font-size:26px;
+}
+
+.pdf-export-compact-quote .quote-info-grid {
+  margin-bottom:10px;
+  gap:8px;
+  font-size:12px;
+}
+
+.pdf-export-compact-quote .quote-items-table th,
+.pdf-export-compact-quote .quote-items-table td {
+  padding:7px;
+  font-size:11px;
+}
+
+.pdf-export-compact-quote .quote-items-table .idesc {
+  font-size:10px;
+}
+
+.pdf-export-compact-quote .quote-extra-grid {
+  margin-top:10px;
+  gap:8px;
+}
+
+.pdf-export-compact-quote .quote-notes {
+  margin-top:0;
+  padding:7px 8px;
+  font-size:10px;
+}
+
+.pdf-export-compact-quote .quote-notes strong {
+  font-size:9px;
+  margin-bottom:3px;
+}
+
+.pdf-export-compact-quote .quote-accept {
+  margin-top:12px;
+  font-size:11px;
+}
+
+.pdf-export-compact-quote .quote-accept td {
+  padding:8px 8px 28px 8px;
+  font-size:10px;
+}
+
 @media(max-width:768px){
   .header-inner {
     padding:10px 12px;
@@ -2689,12 +2808,23 @@ body {
     flex-direction:column;
   }
 
+  .quote-top-right {
+    position:static;
+    max-width:100%;
+    margin-bottom:8px;
+    align-self:flex-start;
+  }
+
   .quote-company-meta,
   .quote-meta.right {
     text-align:left;
   }
 
   .quote-info-grid {
+    grid-template-columns:1fr;
+  }
+
+  .quote-extra-grid {
     grid-template-columns:1fr;
   }
 }

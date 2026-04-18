@@ -1358,9 +1358,11 @@ function generateQuote() {
     companyAddress: document.getElementById('q-company-address')?.value.trim() || '',
     companyPhone: document.getElementById('q-company-phone')?.value.trim() || '',
     companyEmail: document.getElementById('q-company-email')?.value.trim() || '',
+    companyWebsite: document.getElementById('q-company-website')?.value.trim() || '',
     customerName,
     customerAddress: document.getElementById('q-customer-address')?.value.trim() || '',
     customerContact: document.getElementById('q-customer-contact')?.value.trim() || '',
+    bankDetails: document.getElementById('q-bank-details')?.value.trim() || '',
     notes: document.getElementById('q-notes')?.value.trim() || '',
     rows,
     ...totals
@@ -1375,10 +1377,18 @@ function generateQuote() {
 function renderQuote(d) {
   const fmt = (v) => Number(v || 0).toLocaleString('en-IN');
   const dateFmt = (iso) => iso ? new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+  const cleanedWebsite = String(d.companyWebsite || '').replace(/^https?:\/\//i, '').trim();
 
   document.getElementById('qp-company').textContent = d.company;
   document.getElementById('qp-company-address').textContent = d.companyAddress || '-';
   document.getElementById('qp-company-contact').textContent = [d.companyPhone, d.companyEmail].filter(Boolean).join(' | ') || '-';
+  const websiteEl = document.getElementById('qp-company-website');
+  const websiteWrap = document.getElementById('qp-website-wrap');
+  if (websiteEl) websiteEl.textContent = cleanedWebsite;
+  if (websiteWrap) {
+    websiteWrap.style.display = cleanedWebsite ? 'block' : 'none';
+    websiteWrap.classList.remove('hide-mobile');
+  }
   document.getElementById('qp-customer-name').textContent = d.customerName || '-';
   document.getElementById('qp-customer-address').textContent = d.customerAddress || '-';
   document.getElementById('qp-customer-contact').textContent = d.customerContact || '-';
@@ -1390,12 +1400,24 @@ function renderQuote(d) {
   document.getElementById('qp-tax-label').textContent = `TAX ${Number(d.taxR || 0)}%`;
   document.getElementById('qp-grand').textContent = `₹${fmt(d.grand)}`;
 
+  const extraGrid = document.getElementById('qp-extra-grid');
+  const bankBox = document.getElementById('qp-bank-box');
   const notesBox = document.getElementById('qp-notes-box');
-  if (d.notes) {
-    notesBox.style.display = 'block';
-    document.getElementById('qp-notes').textContent = d.notes;
-  } else {
-    notesBox.style.display = 'none';
+  const hasBank = Boolean(d.bankDetails);
+  const hasNotes = Boolean(d.notes);
+  if (bankBox) {
+    bankBox.style.display = hasBank ? 'block' : 'none';
+    const bankText = document.getElementById('qp-bank-details');
+    if (bankText) bankText.textContent = d.bankDetails || '';
+  }
+  if (notesBox) {
+    notesBox.style.display = hasNotes ? 'block' : 'none';
+    const noteText = document.getElementById('qp-notes');
+    if (noteText) noteText.textContent = d.notes || '';
+  }
+  if (extraGrid) {
+    extraGrid.style.display = (hasBank || hasNotes) ? 'grid' : 'none';
+    extraGrid.classList.toggle('single-column', hasBank !== hasNotes);
   }
 
   const logoImg = document.getElementById('quote-logo');
@@ -1441,8 +1463,9 @@ async function downloadQuotePDF() {
 
   const customer = (quoteData.customerName || 'Customer').replace(/\s+/g, '_');
   await downloadPreviewAsPdf('quote-preview', `Quotation_${customer}_${quoteData.number}.pdf`, {
-    scale: 2.6,
-    margin: 4,
+    exportClass: 'pdf-export-compact-quote',
+    scale: 2.5,
+    margin: 8,
     waitMs: 200,
     backgroundColor: '#ffffff',
     imageType: 'JPEG'
@@ -1460,7 +1483,7 @@ function shareQuoteWA() {
     .map((r, idx) => `${idx + 1}. ${r.name} x${r.qty} @ ₹${Number(r.unit || 0).toLocaleString('en-IN')} = ₹${Number(r.amount || 0).toLocaleString('en-IN')}`)
     .join('\n');
 
-  const msg = `*Quotation – ${quoteData.company}*\n\nQuotation #: ${quoteData.number}\nCustomer: ${quoteData.customerName || '-'}\nValid Till: ${quoteData.validTill ? new Date(quoteData.validTill).toLocaleDateString('en-IN') : '-'}\n\n*Items:*\n${itemLines || 'No items'}\n\nSub Total: ₹${Number(quoteData.sub || 0).toLocaleString('en-IN')}\nTax (${Number(quoteData.taxR || 0)}%): ₹${Number(quoteData.taxA || 0).toLocaleString('en-IN')}\n*Grand Total: ₹${Number(quoteData.grand || 0).toLocaleString('en-IN')}*\n\nNotes: ${quoteData.notes || '-'}\n\n_Generated via Insight Reports Co._`;
+  const msg = `*Quotation – ${quoteData.company}*\n\nQuotation #: ${quoteData.number}\nCustomer: ${quoteData.customerName || '-'}\nValid Till: ${quoteData.validTill ? new Date(quoteData.validTill).toLocaleDateString('en-IN') : '-'}\n\n*Items:*\n${itemLines || 'No items'}\n\nSub Total: ₹${Number(quoteData.sub || 0).toLocaleString('en-IN')}\nTax (${Number(quoteData.taxR || 0)}%): ₹${Number(quoteData.taxA || 0).toLocaleString('en-IN')}\n*Grand Total: ₹${Number(quoteData.grand || 0).toLocaleString('en-IN')}*\n\nBank Details: ${quoteData.bankDetails || '-'}\nNotes: ${quoteData.notes || '-'}\nWebsite: ${quoteData.companyWebsite || '-'}\n\n_Generated via Insight Reports Co._`;
   window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
 
@@ -1677,7 +1700,7 @@ async function downloadPreviewAsPdf(elementId, fileName, options = {}) {
     const finalW = imgW * fitScale;
     const finalH = imgH * fitScale;
     const x = (pageW - finalW) / 2;
-    const y = (pageH - finalH) / 2;
+    const y = options.topAlign === false ? (pageH - finalH) / 2 : margin;
 
     pdf.addImage(imgData, imageType, x, y, finalW, finalH, undefined, 'SLOW');
     pdf.save(fileName);

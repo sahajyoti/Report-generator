@@ -8,11 +8,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <link rel="icon" type="image/png" href="logo%20insight.png" />
-<link rel="stylesheet" href="styles.css?v=20260407g" />
-<link rel="stylesheet" href="ui-fix.css?v=20260407g" />
+<link rel="stylesheet" href="styles.css?v=20260418a" />
+<link rel="stylesheet" href="ui-fix.css?v=20260418a" />
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script type="module" src="firebase-init.js"></script>
-<script src="app.js?v=20260407g" defer></script>
+<script src="app.js?v=20260418a" defer></script>
 </head>
 <body>
 
@@ -566,6 +566,9 @@
         <div class="field"><label>Phone</label><input id="q-company-phone" placeholder="9876543210"/></div>
         <div class="field"><label>Email</label><input id="q-company-email" type="email" placeholder="support@insightreports.com"/></div>
       </div>
+      <div class="row one">
+        <div class="field"><label>Website</label><input id="q-company-website" placeholder="www.insightreports.com"/></div>
+      </div>
     </div>
 
     <div class="card">
@@ -622,7 +625,8 @@
         <div class="tot-row grand"><span>Grand Total</span><span class="amt" id="q-grand">₹0</span></div>
       </div>
 
-      <div class="row one" style="margin-top:14px;">
+      <div class="row" style="margin-top:14px;">
+        <div class="field"><label>Bank Details</label><textarea id="q-bank-details" placeholder="Bank Name, Account Name, Account Number, IFSC" style="min-height:72px;"></textarea></div>
         <div class="field"><label>Notes</label><textarea id="q-notes" placeholder="This quotation is non-contractual and valid until the date mentioned above." style="min-height:72px;"></textarea></div>
       </div>
     </div>
@@ -634,6 +638,9 @@
 
   <div id="quote-out" style="display:none;">
     <div id="quote-preview" class="quote-template">
+      <div class="quote-top-right" id="qp-website-wrap" style="display:none;">
+        <span id="qp-company-website">www.insightreports.com</span>
+      </div>
       <div class="quote-company-row">
         <img id="quote-logo" class="brand-logo bill-logo" alt="Company logo" hidden/>
         <div class="quote-company-meta">
@@ -676,8 +683,15 @@
         </tbody>
       </table>
 
-      <div class="quote-notes" id="qp-notes-box" style="display:none;">
-        <span id="qp-notes"></span>
+      <div class="quote-extra-grid" id="qp-extra-grid" style="display:none;">
+        <div class="quote-notes" id="qp-bank-box" style="display:none;">
+          <strong>Bank Details</strong>
+          <span id="qp-bank-details"></span>
+        </div>
+        <div class="quote-notes" id="qp-notes-box" style="display:none;">
+          <strong>Notes</strong>
+          <span id="qp-notes"></span>
+        </div>
       </div>
 
       <div class="quote-accept">
